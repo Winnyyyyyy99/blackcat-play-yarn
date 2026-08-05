@@ -26,6 +26,50 @@ button,input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)
 .topbar{height:64px;padding:0 26px;display:flex;align-items:center;justify-content:space-between;background:var(--card);border-bottom:1px solid var(--line);flex-shrink:0}
 .topbar h1{font-size:20px;font-weight:600;color:var(--ink);font-family:Georgia,"Songti SC",serif}
 .topbar-actions{display:flex;gap:10px;align-items:center}
+.sync-controls{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-shrink:0;
+  margin-left:10px;
+}
+
+.sync-status{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:5px 10px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:#fff;
+  color:var(--ink-soft);
+  font-size:12px;
+  white-space:nowrap;
+}
+
+.sync-button{
+  padding:6px 12px;
+  font-size:12px;
+}
+
+.sync-button:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
+
+@media (max-width:760px){
+  .sync-status-text{
+    display:none;
+  }
+
+  .sync-status{
+    padding:5px 8px;
+  }
+
+  .sync-button{
+    padding:6px 9px;
+  }
+}
 .content{flex:1;overflow:auto;padding:24px}
 .view{display:none;animation:fade .2s}
 .view.active{display:block}
