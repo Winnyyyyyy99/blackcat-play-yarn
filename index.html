@@ -716,7 +716,10 @@ function makeCloudRecord(storeName, item) {
     store_name: storeName,
     record_id: recordId,
     payload: item,
-    updated_at: new Date().toISOString(),
+    updated_at: new Date(
+      getLocalRecordTime(item) ||
+      Date.now()
+    ).toISOString(),
     deleted: false
   };
 }
