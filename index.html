@@ -482,6 +482,110 @@ label{font-size:13px;color:var(--ink-soft);display:block;margin-bottom:6px;font-
 <div class="toast" id="toast"></div>
 
 <script>
+/* ========== Cloud Sync Configuration ========== */
+
+const SYNC_API_URL =
+  "https://blackcat-play-yarn.a-black-red-cat-twelve.workers.dev";
+
+const SYNC_TOKEN_STORAGE_KEY =
+  "cat-yarn-sync-token";
+function getSyncToken() {
+  return localStorage.getItem(SYNC_TOKEN_STORAGE_KEY);
+}
+
+function setSyncToken(token) {
+  localStorage.setItem(
+    SYNC_TOKEN_STORAGE_KEY,
+    token.trim()
+  );
+}
+
+function clearSyncToken() {
+  localStorage.removeItem(SYNC_TOKEN_STORAGE_KEY);
+}
+
+function ensureSyncToken() {
+  let token = getSyncToken();
+
+  if (!token) {
+    token = window.prompt(
+      "请输入私人云同步口令。此设备只需输入一次："
+    );
+
+    if (!token || !token.trim()) {
+      throw new Error("未设置同步口令");
+    }
+
+    setSyncToken(token);
+  }
+
+  return token;
+}
+async function syncApi(path, options = {}) {
+  const token = ensureSyncToken();
+
+  const response = await fetch(
+    `${SYNC_API_URL}${path}`,
+    {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+        ...(options.headers || {})
+      }
+    }
+  );
+
+  let result = null;
+
+  try {
+    result = await response.json();
+  } catch {
+    result = null;
+  }
+
+  if (response.status === 401) {
+    clearSyncToken();
+
+    throw new Error(
+      "同步口令不正确，请刷新页面后重新输入"
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      result?.error ||
+      `云同步请求失败：${response.status}`
+    );
+  }
+
+  return result;
+}
+async function fetchCloudRecords() {
+  const result = await syncApi(
+    "/records",
+    {
+      method: "GET"
+    }
+  );
+
+  return result.records || [];
+}
+async function sendCloudRecords(records) {
+  if (!Array.isArray(records) || records.length === 0) {
+    return;
+  }
+
+  return syncApi(
+    "/records",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        records
+      })
+    }
+  );
+}
 /* ========== IndexedDB ========== */
 const DB_NAME='cat-yarn-workbench',DB_VER=3;
 let db;
@@ -1150,10 +1254,49 @@ $('#import-file').addEventListener('change',async e=>{
 
 /* ========== Init ========== */
 (async function init(){
-  try{await openDB();projects=await dbAll('projects');counters=await dbAll('counters');patterns=await dbAll('patterns');works=await dbAll('works');materials=await dbAll('materials');}
-  catch(e){console.error(e);toast('存储初始化失败，请使用支持 IndexedDB 的浏览器');return;}
-  updateTimerDisplay();renderProjects();
+  try {
+    await openDB();
+
+    projects = await dbAll('projects');
+    counters = await dbAll('counters');
+    patterns = await dbAll('patterns');
+    works = await dbAll('works');
+    materials = await dbAll('materials');
+
+    try {
+      const cloudRecords =
+        await fetchCloudRecords();
+
+      console.log(
+        "Cloud records:",
+        cloudRecords
+      );
+
+      toast(
+        `云端连接成功，读取到 ${cloudRecords.length} 条记录`
+      );
+    } catch (cloudError) {
+      console.error(
+        "Cloud sync test failed:",
+        cloudError
+      );
+
+      toast(
+        "本地数据正常，云端连接失败：" +
+        cloudError.message
+      );
+    }
+
+  } catch(e) {
+    console.error(e);
+
+    toast(
+      '存储初始化失败，请使用支持 IndexedDB 的浏览器'
+    );
+
+    return;
+  }
+
+  updateTimerDisplay();
+  renderProjects();
 })();
-</script>
-</body>
-</html>
