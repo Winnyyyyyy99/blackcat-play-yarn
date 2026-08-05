@@ -572,6 +572,103 @@ async function fetchCloudRecords() {
   return result.records || [];
 }
 
+async function sendCloudRecords(records) {
+  if (!Array.isArray(records) || records.length === 0) {
+    return {
+      ok: true,
+      saved: 0
+    };
+  }
+
+  return syncApi("/records", {
+    method: "POST",
+    body: JSON.stringify({
+      records
+    })
+  });
+}
+
+function makeCloudRecord(storeName, item) {
+  const recordId = String(item.id);
+
+  return {
+    record_key: `${storeName}:${recordId}`,
+    store_name: storeName,
+    record_id: recordId,
+    payload: item,
+    updated_at: new Date().toISOString(),
+    deleted: false
+  };
+}
+
+async function uploadAllLocalDataToCloud() {
+  const storeNames = [
+    "projects",
+    "counters",
+    "patterns",
+    "works",
+    "materials"
+  ];
+
+  const cloudRecords = [];
+
+  for (const storeName of storeNames) {
+    const items = await dbAll(storeName);
+
+    for (const item of items) {
+      cloudRecords.push(
+        makeCloudRecord(storeName, item)
+      );
+    }
+  }
+
+  if (cloudRecords.length === 0) {
+    toast("本机目前没有可上传的数据");
+    return;
+  }
+
+  const confirmed = window.confirm(
+    `即将把本机的 ${cloudRecords.length} 条记录首次上传到云端。是否继续？`
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const batchSize = 50;
+
+    for (
+      let i = 0;
+      i < cloudRecords.length;
+      i += batchSize
+    ) {
+      const batch = cloudRecords.slice(
+        i,
+        i + batchSize
+      );
+
+      await sendCloudRecords(batch);
+    }
+
+    toast(
+      `首次上传成功：${cloudRecords.length} 条记录`
+    );
+
+    console.log(
+      "Initial cloud upload completed:",
+      cloudRecords
+    );
+  } catch (error) {
+    console.error(
+      "Initial cloud upload failed:",
+      error
+    );
+
+    toast(
+      "首次上传失败：" + error.message
+    );
+  }
+}
+
 /* ========== IndexedDB ========== */
 const DB_NAME='cat-yarn-workbench',DB_VER=3;
 let db;
