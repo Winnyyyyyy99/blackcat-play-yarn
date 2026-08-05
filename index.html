@@ -1483,6 +1483,45 @@ $('#import-file').addEventListener('change',async e=>{
   e.target.value='';
 });
 
+  const syncNowButton =
+  document.getElementById("btn-sync-now");
+
+if (syncNowButton) {
+  syncNowButton.addEventListener(
+    "click",
+    async () => {
+      await uploadAllLocalDataToCloud();
+    }
+  );
+}
+  window.addEventListener("offline", () => {
+  setSyncStatus("offline", "离线");
+});
+
+window.addEventListener("online", async () => {
+  setSyncStatus("syncing", "正在连接");
+
+  try {
+    const records =
+      await fetchCloudRecords();
+
+    setSyncStatus(
+      "synced",
+      `云端 ${records.length} 条`
+    );
+  } catch (error) {
+    console.error(
+      "Cloud reconnect failed:",
+      error
+    );
+
+    setSyncStatus(
+      "offline",
+      "连接失败"
+    );
+  }
+});
+  
 /* ========== Init ========== */
 (async function init() {
   try {
@@ -1502,6 +1541,33 @@ $('#import-file').addEventListener('change',async e=>{
         cloudRecords
       );
 
+      const lastSyncTime =
+  localStorage.getItem(
+    "cat-yarn-last-sync-time"
+  );
+
+      if (lastSyncTime) {
+        const timeText =
+          new Date(
+            Number(lastSyncTime)
+          ).toLocaleTimeString(
+            "zh-CN",
+            {
+              hour: "2-digit",
+              minute: "2-digit"
+            }
+          );
+
+  setSyncStatus(
+     "synced",
+    `已同步 ${timeText}`
+        );
+} else {
+  setSyncStatus(
+    "synced",
+    `云端 ${cloudRecords.length} 条`
+  );
+}
       toast(
         `云端连接成功，读取到 ${cloudRecords.length} 条记录`
       );
