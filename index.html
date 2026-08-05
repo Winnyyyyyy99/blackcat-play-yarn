@@ -750,10 +750,12 @@ async function uploadAllLocalDataToCloud() {
     `即将把本机的 ${cloudRecords.length} 条记录首次上传到云端。是否继续？`
   );
 
-  if (!confirmed) return;
+  if (!confirmed) return false;
 
   try {
-    const batchSize = 50;
+  setSyncStatus("syncing", "同步中");
+
+  const batchSize = 50;
 
     for (
       let i = 0;
@@ -768,24 +770,51 @@ async function uploadAllLocalDataToCloud() {
       await sendCloudRecords(batch);
     }
 
-    toast(
-      `首次上传成功：${cloudRecords.length} 条记录`
-    );
+    const syncTime =
+  new Date().toLocaleTimeString(
+    "zh-CN",
+    {
+      hour: "2-digit",
+      minute: "2-digit"
+    }
+  );
 
-    console.log(
-      "Initial cloud upload completed:",
-      cloudRecords
-    );
+localStorage.setItem(
+  "cat-yarn-last-sync-time",
+  Date.now().toString()
+);
+
+setSyncStatus(
+  "synced",
+  `已同步 ${syncTime}`
+);
+
+toast(
+  `同步成功：${cloudRecords.length} 条记录`
+);
+
+console.log(
+  "Manual cloud upload completed:",
+  cloudRecords
+);
+
+return true;
   } catch (error) {
-    console.error(
-      "Initial cloud upload failed:",
-      error
-    );
+  console.error(
+    "Manual cloud upload failed:",
+    error
+  );
 
-    toast(
-      "首次上传失败：" + error.message
-    );
-  }
+  setSyncStatus(
+    "offline",
+    "同步失败"
+  );
+
+  toast(
+    "同步失败：" + error.message
+  );
+
+  return false;
 }
 
 /* ========== IndexedDB ========== */
