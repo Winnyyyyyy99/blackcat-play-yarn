@@ -628,6 +628,51 @@ async function syncApi(path, options = {}) {
   return result;
 }
 
+function setSyncStatus(status, message) {
+  const icon =
+    document.getElementById("sync-status-icon");
+
+  const text =
+    document.getElementById("sync-status-text");
+
+  const button =
+    document.getElementById("btn-sync-now");
+
+  if (!icon || !text) return;
+
+  if (status === "synced") {
+    icon.textContent = "🟢";
+    text.textContent = message || "已同步";
+
+    if (button) {
+      button.disabled = false;
+      button.textContent = "☁️ 立即同步";
+    }
+
+    return;
+  }
+
+  if (status === "syncing") {
+    icon.textContent = "🟡";
+    text.textContent = message || "同步中";
+
+    if (button) {
+      button.disabled = true;
+      button.textContent = "同步中…";
+    }
+
+    return;
+  }
+
+  icon.textContent = "🔴";
+  text.textContent = message || "离线";
+
+  if (button) {
+    button.disabled = !navigator.onLine;
+    button.textContent = "☁️ 立即同步";
+  }
+}
+
 async function fetchCloudRecords() {
   const result = await syncApi(
     "/records",
@@ -669,6 +714,12 @@ function makeCloudRecord(storeName, item) {
 }
 
 async function uploadAllLocalDataToCloud() {
+  if (!navigator.onLine) {
+    setSyncStatus("offline", "离线");
+    toast("当前没有网络，无法同步");
+    return false;
+  }
+
   const storeNames = [
     "projects",
     "counters",
@@ -690,8 +741,9 @@ async function uploadAllLocalDataToCloud() {
   }
 
   if (cloudRecords.length === 0) {
+    setSyncStatus("synced", "没有待同步数据");
     toast("本机目前没有可上传的数据");
-    return;
+    return true;
   }
 
   const confirmed = window.confirm(
