@@ -1572,16 +1572,23 @@ window.addEventListener("online", async () => {
         `云端连接成功，读取到 ${cloudRecords.length} 条记录`
       );
     } catch (cloudError) {
-      console.error(
-        "Cloud sync test failed:",
-        cloudError
-      );
+  console.error(
+    "Cloud sync test failed:",
+    cloudError
+  );
 
-      toast(
-        "本地数据正常，云端连接失败：" +
-        cloudError.message
-      );
-    }
+  setSyncStatus(
+    "offline",
+    navigator.onLine
+      ? "连接失败"
+      : "离线"
+  );
+
+  toast(
+    "本地数据正常，云端连接失败：" +
+    cloudError.message
+  );
+}
 
   } catch (e) {
     console.error(e);
