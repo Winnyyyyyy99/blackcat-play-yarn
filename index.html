@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>猫糕玩毛线 · 工作台</title>
+<style>
+:root{--sidebar:#2B5A5A;--sidebar-light:#3A6E6E;--bg:#EAF1F1;--card:#FFFFFF;--ink:#203535;--ink-soft:#557575;--ink-mute:#88A5A5;--line:#D5E3E3;--accent:#3A8A8A;--accent-hover:#2F7575;--accent-soft:#D6EBEB;--danger:#C45B5B;--shadow:0 2px 10px rgba(32,53,53,0.06);--shadow-lg:0 8px 24px rgba(32,53,53,0.12);--radius:14px;--radius-sm:8px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:210px;background:var(--sidebar);color:#fff;display:flex;flex-direction:column;flex-shrink:0;transition:left .25s}
+.sidebar-header{padding:22px 16px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.1)}
+.logo-img{max-width:110px;height:auto;display:block;margin:0 auto}
+.brand{font-size:15px;font-weight:700;margin-top:10px;letter-spacing:1px}
+.brand-sub{font-size:11px;opacity:.7;font-weight:400}
+.nav{flex:1;overflow-y:auto;padding:12px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;cursor:pointer;transition:.15s;color:rgba(255,255,255,.72);font-size:14px;margin-bottom:4px}
+.nav-item:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-item.active{background:rgba(255,255,255,.18);color:#fff;font-weight:600}
+.nav-item svg{width:20px;height:20px;opacity:.9;flex-shrink:0}
+.sidebar-footer{padding:14px;font-size:11px;color:rgba(255,255,255,.5);text-align:center;border-top:1px solid rgba(255,255,255,.1)}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg)}
+.topbar{height:64px;padding:0 26px;display:flex;align-items:center;justify-content:space-between;background:var(--card);border-bottom:1px solid var(--line);flex-shrink:0}
+.topbar h1{font-size:20px;font-weight:600;color:var(--ink);font-family:Georgia,"Songti SC",serif}
+.topbar-actions{display:flex;gap:10px;align-items:center}
+.content{flex:1;overflow:auto;padding:24px}
+.view{display:none;animation:fade .2s}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.page-desc{color:var(--ink-soft);font-size:14px;margin-top:4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 16px;border-radius:22px;cursor:pointer;transition:.15s}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.primary:hover{background:var(--accent-hover);border-color:var(--accent-hover);color:#fff}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger);border-color:#e0b8b8}
+.btn.danger:hover{background:#fce8e8}
+.btn.sm{padding:5px 12px;font-size:13px}
+input[type=text],input[type=number],input[type=date],input[type=search],input[type=url],input[type=tel],textarea,select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:#fff;transition:border-color .15s}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
+label{font-size:13px;color:var(--ink-soft);display:block;margin-bottom:6px;font-weight:500}
+.field{margin-bottom:16px}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.row>*{flex:1;min-width:120px}
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+.toolbar input[type=search]{flex:1;min-width:200px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.empty{text-align:center;padding:60px 20px;color:var(--ink-mute)}
+.empty svg{width:120px;height:120px;margin-bottom:12px;opacity:.6}
+.stats{display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap}
+.stat{flex:1;min-width:120px;padding:16px}
+.stat .num{font-size:26px;font-weight:700;color:var(--accent);font-family:Georgia,serif}
+.stat .lbl{font-size:12px;color:var(--ink-mute);margin-top:2px}
+.tag-pill{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;background:var(--accent-soft);color:var(--accent);margin-right:4px}
+.tag-pill.outline{background:#fff;border:1px solid var(--line);color:var(--ink-soft)}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500}
+.badge.plan{background:#E8E8E8;color:#666}
+.badge.progress{background:#D6EBEB;color:var(--accent)}
+.badge.done{background:#D6EBD6;color:#5A8A5A}
+.progress-bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:8px}
+.progress-bar>div{height:100%;background:var(--accent);border-radius:4px;transition:width .3s}
+.dropzone{border:2px dashed var(--line);border-radius:var(--radius);padding:28px;text-align:center;cursor:pointer;transition:.2s;background:#fff}
+.dropzone:hover,.dropzone.over{border-color:var(--accent);background:var(--accent-soft)}
+.dropzone svg{width:40px;height:40px;opacity:.5;margin-bottom:8px}
+.dropzone .hint{font-size:13px;color:var(--ink-soft)}
+.preview-img{width:100%;max-height:180px;object-fit:contain;border-radius:var(--radius-sm);background:var(--bg);margin-bottom:10px;display:none}
+.img-thumb{width:64px;height:64px;object-fit:cover;border-radius:var(--radius-sm);border:1px solid var(--line)}
+.thumb-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.modal-mask{position:fixed;inset:0;background:rgba(32,53,53,0.45);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-mask.show{display:flex}
+.modal{background:var(--bg);border-radius:var(--radius);width:100%;max-width:580px;max-height:90vh;overflow:auto;box-shadow:var(--shadow-lg)}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg);z-index:1}
+.modal-head h3{font-size:17px}
+.modal-body{padding:20px}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--bg)}
+.del-icon{cursor:pointer;color:var(--ink-mute);transition:.15s}
+.del-icon:hover{color:var(--danger)}
+.toast{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 20px;border-radius:22px;font-size:14px;z-index:300;opacity:0;transition:.25s;pointer-events:none}
+.toast.show{opacity:1}
+.counter-display{font-size:42px;font-weight:700;color:var(--accent);font-family:Georgia,serif;text-align:center}
+.counter-actions{display:flex;justify-content:center;gap:16px;margin:12px 0}
+.counter-btn{width:56px;height:56px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:28px;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center}
+.counter-btn:hover{background:var(--accent-hover)}
+.counter-btn.minus{background:var(--ink-soft)}
+.timer-display{font-size:42px;font-weight:700;color:var(--ink);font-family:Georgia,serif;text-align:center;letter-spacing:2px}
+.timer-controls{display:flex;justify-content:center;gap:12px;margin:12px 0}
+.history-list{font-size:13px;color:var(--ink-soft);max-height:160px;overflow:auto}
+.history-item{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line)}
+.material-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.material-row input{flex:1}
+.section-title{font-size:14px;font-weight:600;color:var(--ink);margin:18px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;padding:8px;border:1px solid var(--line);background:#fff;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;color:var(--ink-soft)}
+.seg button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.menu-toggle{display:none;background:none;border:none;color:var(--ink);cursor:pointer;padding:8px}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:110}
+.overlay.show{display:block}
+.hint-text{font-size:12px;color:var(--ink-mute);margin-top:6px}
+.calc-output .big{font-size:34px;font-weight:700;color:var(--accent);font-family:Georgia,serif}
+.calc-output .row-item{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed var(--line)}
+.calc-output .row-item:last-child{border-bottom:none}
+.calc-output .label{color:var(--ink-soft);font-size:14px}
+.calc-output .val{font-size:16px;font-weight:600}
+.counter-card{padding:16px}
+.counter-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.counter-name{font-weight:600;font-size:15px}
+.counter-meta{font-size:12px;color:var(--ink-soft)}
+@media (max-width:760px){
+  .sidebar{position:fixed;left:-210px;z-index:120;height:100%}
+  .sidebar.open{left:0}
+  .overlay.show{display:block}
+  .menu-toggle{display:block}
+  .content{padding:16px}
+  .grid{grid-template-columns:1fr}
+  .row{flex-direction:column}
+  .row>*{width:100%}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <img class="logo-img" src="data:image/png;base64,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" alt="猫糕玩毛线">
+      <div class="brand">猫糕玩毛线</div>
+      <div class="brand-sub">工作台</div>
+    </div>
+    <nav class="nav" id="nav">
+      <div class="nav-item active" data-view="projects"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h18"/></svg>作品进度</div>
+      <div class="nav-item" data-view="counters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>计数器</div>
+      <div class="nav-item" data-view="patterns"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l7 4v6c0 5-3.5 9-7 10-3.5-1-7-5-7-10V6l7-4z"/></svg>花样参考</div>
+      <div class="nav-item" data-view="calc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 4v16"/></svg>密度计算</div>
+      <div class="nav-item" data-view="works"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>作品记录</div>
+      <div class="nav-item" data-view="materials"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c-3 2-6 4-6 7v6c0 3 2 5 6 7 4-2 6-4 6-7V9c0-3-3-5-6-7z"/><path d="M12 9v10"/></svg>线材管理</div>
+      <div class="nav-item" data-view="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16v-5M12 16V8M17 16v-3"/></svg>统计</div>
+      <div class="nav-item" data-view="export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M7 11l5 5 5-5"/><path d="M12 4v12"/></svg>数据导出</div>
+      <div class="nav-item" data-view="about"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>关于</div>
+    </nav>
+    <div class="sidebar-footer">v2.0 · 本地存储</div>
+  </aside>
+  <div class="overlay" id="overlay"></div>
+  <main class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="menu-toggle" id="menu-toggle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
+        <h1 id="page-title">作品进度</h1>
+      </div>
+      <div class="topbar-actions" id="topbar-actions"></div>
+    </header>
+    <div class="content">
+      <section class="view active" id="view-projects">
+        <div class="stats" id="project-stats"></div>
+        <div id="project-list"></div>
+      </section>
+      <section class="view" id="view-project-detail">
+        <div style="max-width:600px;margin:0 auto;">
+          <button class="btn ghost" id="btn-back-project" style="margin-bottom:14px;">← 返回作品进度</button>
+          <div class="card" style="padding:20px;margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+              <h2 id="pd-project-name" style="font-size:22px;font-family:Georgia,serif;">项目名</h2>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <span class="badge" id="pd-project-status" style="cursor:pointer;">进行中</span>
+                <span class="tag-pill outline" id="pd-project-needle">3.0mm</span>
+              </div>
+            </div>
+            <div style="color:var(--ink-soft);font-size:13px;margin-top:6px;">点击状态标签可切换</div>
+          </div>
+          <div class="card" style="padding:20px;margin-bottom:16px;">
+            <h3 style="font-size:16px;margin-bottom:12px;">行计数器</h3>
+            <div class="counter-display" id="pd-counter-current">0</div>
+            <div style="text-align:center;color:var(--ink-soft);font-size:14px;">/ <span id="pd-counter-target">128</span> 行</div>
+            <div class="counter-actions">
+              <button class="counter-btn minus" id="pd-counter-minus">−</button>
+              <button class="counter-btn" id="pd-counter-plus">＋</button>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;">
+              <button class="btn sm" id="pd-counter-reset">↺ 重置</button>
+              <button class="btn sm" id="pd-toggle-history">展开记录</button>
+            </div>
+            <div class="history-list" id="pd-history" style="display:none;"></div>
+            <div id="pd-progress-wrap" style="margin-top:10px;"></div>
+          </div>
+          <div class="card" style="padding:20px;margin-bottom:16px;">
+            <h3 style="font-size:16px;margin-bottom:12px;">计时器</h3>
+            <div class="timer-display" id="pd-timer-display">00:00:00</div>
+            <div class="timer-controls">
+              <button class="btn primary" id="pd-timer-toggle">▶ 开始计时</button>
+            </div>
+            <div style="text-align:center;color:var(--ink-soft);font-size:14px;margin-top:6px;">总用时 <span id="pd-total-minutes">0</span> 分钟</div>
+          </div>
+          <div class="card" style="padding:20px;margin-bottom:16px;">
+            <h3 style="font-size:16px;margin-bottom:12px;">项目信息</h3>
+            <div class="field"><label>针号</label><div id="pd-info-needle">—</div></div>
+            <div class="field"><label>描述</label><div id="pd-info-desc" style="color:var(--ink-soft);white-space:pre-wrap;">—</div></div>
+            <div class="field" id="pd-info-materials-wrap"><label>使用线材</label><div id="pd-info-materials"></div></div>
+            <div class="field" id="pd-info-blueprint-wrap"><label>图纸</label><div id="pd-info-blueprint"></div></div>
+          </div>
+        </div>
+      </section>
+      <section class="view" id="view-counters">
+        <div class="card" style="padding:20px;margin-bottom:20px;">
+          <div class="timer-display" id="timer-display">00:00:00</div>
+          <div class="timer-controls">
+            <button class="btn primary" id="timer-toggle">▶ 开始</button>
+            <button class="btn" id="timer-reset">↺ 归零</button>
+          </div>
+          <div style="text-align:center;color:var(--ink-soft);font-size:14px;">今日累计钩织：<span id="today-time">0 分钟</span></div>
+        </div>
+        <div class="toolbar">
+          <button class="btn primary" id="btn-new-counter">＋ 新增计数项目</button>
+        </div>
+        <div id="counter-list"></div>
+      </section>
+      <section class="view" id="view-patterns">
+        <div class="toolbar">
+          <input type="search" id="pattern-search-num" placeholder="按单组花样针数检索" style="max-width:180px;">
+          <button class="btn primary" id="btn-search-pattern">查花样</button>
+          <button class="btn" id="btn-all-pattern">全部</button>
+          <button class="btn primary" id="btn-upload-pattern" style="margin-left:auto;">＋ 上传图样</button>
+        </div>
+        <div id="pattern-grid"></div>
+      </section>
+      <section class="view" id="view-calc">
+        <div style="max-width:760px;margin:0 auto;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+            <div class="card" style="padding:20px;">
+              <div id="calc-mode" style="display:flex;gap:6px;margin-bottom:16px;">
+                <button class="active" data-mode="density" style="flex:1;padding:8px;border:1px solid var(--line);background:#fff;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;color:var(--ink-soft);">算密度</button>
+                <button data-mode="estimate" style="flex:1;padding:8px;border:1px solid var(--line);background:#fff;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;color:var(--ink-soft);">算针数</button>
+              </div>
+              <div id="form-density">
+                <div class="row"><div class="field"><label>针数（针）</label><input type="number" id="d-stitches" placeholder="20" step="0.1"></div><div class="field"><label>行数（行）</label><input type="number" id="d-rows" placeholder="20" step="0.1"></div></div>
+                <div class="row"><div class="field"><label>宽度 (cm)</label><input type="number" id="d-width" placeholder="10" step="0.1"></div><div class="field"><label>长度 (cm)</label><input type="number" id="d-length" placeholder="10" step="0.1"></div></div>
+              </div>
+              <div id="form-estimate" style="display:none;">
+                <div class="row"><div class="field"><label>每 cm 针数</label><input type="number" id="e-sts" placeholder="2.5" step="0.01"></div><div class="field"><label>每 cm 行数</label><input type="number" id="e-rows" placeholder="2.8" step="0.01"></div></div>
+                <div class="row"><div class="field"><label>目标宽度 (cm)</label><input type="number" id="e-width" placeholder="25" step="0.1"></div><div class="field"><label>目标长度 (cm)</label><input type="number" id="e-length" placeholder="30" step="0.1"></div></div>
+              </div>
+              <button class="btn primary" id="btn-calc" style="width:100%;">计算</button>
+              <p class="hint-text">💡 用同样毛线和钩针，钩一个至少 10×10cm 的样片测量最准。</p>
+            </div>
+            <div class="card calc-output" id="calc-result" style="padding:20px;">
+              <div class="empty" id="calc-empty" style="padding:20px;"><svg viewBox="0 0 120 120" fill="none"><circle cx="60" cy="60" r="40" stroke="var(--line)" stroke-width="3" stroke-dasharray="6 6"/><text x="60" y="68" text-anchor="middle" font-size="30" fill="var(--ink-mute)">?</text></svg><p>输入数据后点击「计算」</p></div>
+              <div id="calc-output" style="display:none;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="view" id="view-works">
+        <div id="works-list"></div>
+      </section>
+      <section class="view" id="view-materials">
+        <div class="toolbar">
+          <input type="search" id="material-search" placeholder="搜索线材名称 / 品牌 / 颜色…" style="flex:1;">
+        </div>
+        <div id="material-list"></div>
+      </section>
+      <section class="view" id="view-stats">
+        <div id="stats-content"></div>
+      </section>
+      <section class="view" id="view-export">
+        <div style="max-width:680px;margin:0 auto;">
+          <div class="card" style="padding:20px;margin-bottom:16px;">
+            <h3 style="font-size:16px;margin-bottom:12px;">当前数据概览</h3>
+            <div id="export-summary" style="color:var(--ink-soft);font-size:14px;line-height:1.8;"></div>
+          </div>
+          <div class="card" style="padding:20px;margin-bottom:16px;">
+            <h3 style="font-size:16px;margin-bottom:8px;">① 完整备份（推荐）</h3>
+            <p style="font-size:13px;color:var(--ink-soft);margin-bottom:14px;">含图片，可用于换设备或恢复。</p>
+            <button class="btn primary" id="btn-export-json" style="width:100%;">⬇ 导出完整备份（.json）</button>
+          </div>
+          <div class="card" style="padding:20px;margin-bottom:16px;">
+            <h3 style="font-size:16px;margin-bottom:8px;">② 可读清单</h3>
+            <p style="font-size:13px;color:var(--ink-soft);margin-bottom:14px;">纯文字，方便发微信 / 打印。</p>
+            <button class="btn primary" id="btn-export-txt" style="width:100%;">⬇ 导出文字清单（.txt）</button>
+          </div>
+          <div class="card" style="padding:20px;margin-bottom:16px;">
+            <h3 style="font-size:16px;margin-bottom:8px;">③ 导入恢复</h3>
+            <p style="font-size:13px;color:var(--ink-soft);margin-bottom:14px;">⚠️ 导入会覆盖当前所有数据，请确认备份文件无误。</p>
+            <input type="file" id="import-file" accept=".json" hidden>
+            <button class="btn" id="btn-import" style="width:100%;">⬆ 选择备份文件导入</button>
+          </div>
+        </div>
+      </section>
+      <section class="view" id="view-about">
+        <div style="max-width:680px;">
+          <p style="color:var(--ink-soft);margin-bottom:16px;">这是一个为钩织 / 毛线手工爱好者打造的个人创作工作台。不会写代码、不会算密度都没关系——把想法和花样交给这里，安心玩毛线就好。</p>
+          <div class="feature-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:24px;">
+            <div class="card" style="padding:16px;"><h3 style="font-size:15px;margin-bottom:6px;">🧶 作品进度</h3><p style="font-size:13px;color:var(--ink-soft);">管理钩织项目，记录状态、针号、线材、图纸与目标行数。</p></div>
+            <div class="card" style="padding:16px;"><h3 style="font-size:15px;margin-bottom:6px;">⏱️ 计数器</h3><p style="font-size:13px;color:var(--ink-soft);">计时、计行/圈，自动记录每行用时与钩织笔记。</p></div>
+            <div class="card" style="padding:16px;"><h3 style="font-size:15px;margin-bottom:6px;">🌸 花样参考</h3><p style="font-size:13px;color:var(--ink-soft);">上传花样图解，按单组针数检索，建立花样字典。</p></div>
+            <div class="card" style="padding:16px;"><h3 style="font-size:15px;margin-bottom:6px;">📐 密度计算</h3><p style="font-size:13px;color:var(--ink-soft);">自动算密度，按目标尺寸反推针数行数。</p></div>
+            <div class="card" style="padding:16px;"><h3 style="font-size:15px;margin-bottom:6px;">📒 作品记录</h3><p style="font-size:13px;color:var(--ink-soft);">记录每件作品的线材、钩针、思路与成品实拍。</p></div>
+            <div class="card" style="padding:16px;"><h3 style="font-size:15px;margin-bottom:6px;">💾 本地存储</h3><p style="font-size:13px;color:var(--ink-soft);">数据全部存在浏览器本地，无需账号，安全私密。</p></div>
+          </div>
+          <h2 style="font-size:18px;margin:20px 0 10px;font-family:Georgia,serif;">使用说明</h2>
+          <ul style="padding-left:20px;color:var(--ink-soft);font-size:14px;line-height:1.8;">
+            <li><b>作品进度</b>：新建项目，填写状态、针号、线材、图纸与目标行数。项目可与计数器关联，自动计算进度。</li>
+            <li><b>计数器</b>：点击「开始」计时，使用 +/- 记录行/圈数。历史记录会保存每次操作的时间与用时。</li>
+            <li><b>花样参考</b>：上传花样图样，填写单组针数/行数，之后可按针数快速检索。</li>
+            <li><b>密度计算</b>：输入样片针数、行数与尺寸，得出 10×10cm 标准密度；「算针数」模式可反推。</li>
+            <li><b>作品记录</b>：新增作品，记录织物名称、线材、钩针型号、设计思路、钩织要点与成品照片。</li>
+          </ul>
+          <p style="color:var(--ink-mute);font-size:13px;margin-top:16px;">纯原生 HTML / CSS / JavaScript · IndexedDB 本地存储 · 零外部依赖</p>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- 项目 Modal -->
+<div class="modal-mask" id="modal-project">
+  <div class="modal">
+    <div class="modal-head"><h3 id="modal-project-title">新建项目</h3><span class="del-icon" data-close>✕</span></div>
+    <div class="modal-body">
+      <div class="field"><label>项目名称 *</label><input type="text" id="pr-name" placeholder="如：奶油泡芙开衫"></div>
+      <div class="row">
+        <div class="field"><label>状态</label><select id="pr-status"><option value="计划中">计划中</option><option value="进行中">进行中</option><option value="已完成">已完成</option></select></div>
+        <div class="field"><label>针号</label><input type="text" id="pr-needle" placeholder="如：3.0mm"></div>
+      </div>
+      <div class="field"><label>描述</label><textarea id="pr-desc" rows="2" placeholder="项目简介、配色、版型…"></textarea></div>
+      <div class="section-title">使用线材</div>
+      <div id="materials-list"></div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button class="btn sm" id="btn-add-material">＋ 手动添加</button>
+        <button class="btn sm" id="btn-pick-material">📚 从线材库选择</button>
+      </div>
+      <div class="section-title">图纸</div>
+      <div class="field">
+        <div class="dropzone" id="dropzone-blueprint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 16V4m-5 5l5-5 5 5M5 20h14"/></svg><div class="hint">点击上传 / 拖拽 / 粘贴 图纸图片</div></div>
+        <input type="file" id="blueprint-file" accept="image/*" hidden>
+        <img class="preview-img" id="blueprint-preview">
+      </div>
+      <div class="row"><div class="field"><label>图纸链接</label><input type="url" id="pr-link" placeholder="https://..."></div></div>
+      <div class="field"><label>图纸备注</label><textarea id="pr-blueprint-note" rows="2" placeholder="图解来源、注意事项…"></textarea></div>
+      <div class="section-title">计数器</div>
+      <div class="field"><label>目标总行数</label><input type="number" id="pr-target" placeholder="计数器会根据此数值显示进度" min="0"></div>
+    </div>
+    <div class="modal-foot"><button class="btn danger sm" id="btn-del-project" style="display:none;margin-right:auto;">删除</button><button class="btn ghost" data-close>取消</button><button class="btn primary" id="btn-save-project">保存</button></div>
+  </div>
+</div>
+
+<!-- 计数项目 Modal -->
+<div class="modal-mask" id="modal-counter">
+  <div class="modal">
+    <div class="modal-head"><h3 id="modal-counter-title">新增计数项目</h3><span class="del-icon" data-close>✕</span></div>
+    <div class="modal-body">
+      <div class="field"><label>计数项目名称</label><input type="text" id="c-name" placeholder="如：裙身"></div>
+      <div class="row">
+        <div class="field"><label>关联项目</label><select id="c-project"><option value="">无</option></select></div>
+        <div class="field"><label>目标行数</label><input type="number" id="c-target" placeholder="如 120" min="0"></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn ghost" data-close>取消</button><button class="btn primary" id="btn-save-counter">保存</button></div>
+  </div>
+</div>
+
+<!-- 线材 Modal -->
+<div class="modal-mask" id="modal-material">
+  <div class="modal">
+    <div class="modal-head"><h3 id="modal-material-title">添加线材</h3><span class="del-icon" data-close>✕</span></div>
+    <div class="modal-body">
+      <div class="field">
+        <div class="dropzone" id="dropzone-material"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 16V4m-5 5l5-5 5 5M5 20h14"/></svg><div class="hint">添加图片</div></div>
+        <input type="file" id="material-file" accept="image/*" hidden>
+        <img class="preview-img" id="material-preview">
+      </div>
+      <div class="field"><label>线材名称 *</label><input type="text" id="m-name" placeholder="如：美丽诺羊毛"></div>
+      <div class="row"><div class="field"><label>品牌</label><input type="text" id="m-brand" placeholder="品牌"></div><div class="field"><label>颜色名称</label><input type="text" id="m-color" placeholder="颜色"></div></div>
+      <div class="field"><label>材质</label><input type="text" id="m-material" placeholder="如：100% 羊毛"></div>
+      <div class="field"><label>计量单位</label>
+        <div class="seg" id="m-unit" style="display:flex;gap:6px;">
+          <button class="active" data-unit="g" style="flex:1;padding:8px;border:1px solid var(--line);background:#fff;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;color:var(--ink-soft);">g</button>
+          <button data-unit="oz" style="flex:1;padding:8px;border:1px solid var(--line);background:#fff;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;color:var(--ink-soft);">oz</button>
+          <button data-unit="m" style="flex:1;padding:8px;border:1px solid var(--line);background:#fff;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;color:var(--ink-soft);">m</button>
+        </div>
+      </div>
+      <div class="field"><label>总克重 / 总量</label><input type="number" id="m-weight" placeholder="如 100" step="0.1"></div>
+      <div class="row"><div class="field"><label>推荐针号</label><input type="text" id="m-needle" placeholder="如：3.0mm"></div><div class="field"><label>购买价格</label><input type="number" id="m-price" placeholder="如 25" step="0.01"></div></div>
+      <div class="field"><label>备注</label><textarea id="m-note" rows="2" placeholder="色号、购买渠道等…"></textarea></div>
+    </div>
+    <div class="modal-foot"><button class="btn danger sm" id="btn-del-material" style="display:none;margin-right:auto;">删除</button><button class="btn ghost" data-close>取消</button><button class="btn primary" id="btn-save-material">保存</button></div>
+  </div>
+</div>
+
+<!-- 线材库选择 Modal -->
+<div class="modal-mask" id="modal-material-picker">
+  <div class="modal">
+    <div class="modal-head"><h3>从线材库选择</h3><span class="del-icon" data-close>✕</span></div>
+    <div class="modal-body">
+      <input type="search" id="picker-search" placeholder="搜索线材…" style="margin-bottom:12px;">
+      <div id="picker-list" style="max-height:360px;overflow:auto;"></div>
+    </div>
+    <div class="modal-foot"><button class="btn ghost" data-close>关闭</button></div>
+  </div>
+</div>
+
+<!-- 花样 Modal -->
+<div class="modal-mask" id="modal-pattern">
+  <div class="modal">
+    <div class="modal-head"><h3>上传我的图样</h3><span class="del-icon" data-close>✕</span></div>
+    <div class="modal-body">
+      <div class="field"><label>花样名称</label><input type="text" id="p-name" placeholder="如：小贝壳花样"></div>
+      <div class="field">
+        <div class="dropzone" id="dropzone-pattern"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 16V4m-5 5l5-5 5 5M5 20h14"/></svg><div class="hint">点击上传图样图片（图解/实拍）</div></div>
+        <input type="file" id="pattern-file" accept="image/*" hidden>
+        <img class="preview-img" id="pattern-preview">
+      </div>
+      <div class="row">
+        <div class="field"><label>单组花样针数</label><input type="number" id="p-sts" placeholder="针" min="0"></div>
+        <div class="field"><label>单组花样行数</label><input type="number" id="p-rows" placeholder="行" min="0"></div>
+      </div>
+      <div class="field"><label>分类</label><input type="text" id="p-cat" placeholder="如：网格类"></div>
+      <div class="field"><label>花样说明</label><textarea id="p-note" rows="3" placeholder="钩法组成、适用场景、注意事项…"></textarea></div>
+    </div>
+    <div class="modal-foot"><button class="btn ghost" data-close>取消</button><button class="btn primary" id="btn-save-pattern">保存</button></div>
+  </div>
+</div>
+
+<!-- 花样详情 Modal -->
+<div class="modal-mask" id="modal-pattern-detail">
+  <div class="modal">
+    <div class="modal-head"><h3 id="pd-title">花样详情</h3><span class="del-icon" data-close>✕</span></div>
+    <div class="modal-body" id="pd-body"></div>
+    <div class="modal-foot"><button class="btn danger sm" id="btn-del-pattern">删除</button><button class="btn ghost" data-close>关闭</button></div>
+  </div>
+</div>
+
+<!-- 作品 Modal -->
+<div class="modal-mask" id="modal-work">
+  <div class="modal">
+    <div class="modal-head"><h3>新增作品</h3><span class="del-icon" data-close>✕</span></div>
+    <div class="modal-body">
+      <div class="field"><label>织物名称 *</label><input type="text" id="w-name" placeholder="如：奶油泡芙开衫"></div>
+      <div class="field">
+        <label>织物图片（图解/过程图）</label>
+        <div class="dropzone" id="dropzone-work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 16V4m-5 5l5-5 5 5M5 20h14"/></svg><div class="hint">点击上传织物图片</div></div>
+        <input type="file" id="work-file" accept="image/*" hidden>
+        <img class="preview-img" id="work-preview">
+      </div>
+      <div class="row">
+        <div class="field"><label>线材</label><input type="text" id="w-yarn" placeholder="品牌/名称/色号"></div>
+        <div class="field"><label>钩针型号</label><input type="text" id="w-hook" placeholder="如：1.5mm"></div>
+      </div>
+      <div class="field"><label>设计思路</label><textarea id="w-design" rows="2" placeholder="版型、配色、花样来源…"></textarea></div>
+      <div class="field"><label>钩织要点</label><textarea id="w-tips" rows="2" placeholder="起针数、加减针位置、密度、注意事项…"></textarea></div>
+      <div class="field">
+        <label>成品实拍（可多选）</label>
+        <div class="dropzone" id="dropzone-photos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 16V4m-5 5l5-5 5 5M5 20h14"/></svg><div class="hint">点击添加成品照片</div></div>
+        <input type="file" id="photos-file" accept="image/*" multiple hidden>
+        <div class="thumb-grid" id="photos-preview"></div>
+      </div>
+      <div class="row"><div class="field"><label>完成日期</label><input type="date" id="w-date"></div></div>
+      <div class="field"><label>心得备注</label><textarea id="w-note" rows="2" placeholder="钩织过程的小心得…"></textarea></div>
+    </div>
+    <div class="modal-foot"><button class="btn ghost" data-close>取消</button><button class="btn primary" id="btn-save-work">保存</button></div>
+  </div>
+</div>
+
+<!-- 作品详情 Modal -->
+<div class="modal-mask" id="modal-work-detail">
+  <div class="modal">
+    <div class="modal-head"><h3 id="wd-title">作品详情</h3><span class="del-icon" data-close>✕</span></div>
+    <div class="modal-body" id="wd-body"></div>
+    <div class="modal-foot"><button class="btn danger sm" id="btn-del-work">删除</button><button class="btn ghost" data-close>关闭</button></div>
+  </div>
+</div>
+
+<!-- 导出 Modal -->
+<div class="modal-mask" id="modal-export">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-head"><h3>作品集长图</h3><span class="del-icon" data-close>✕</span></div>
+    <div class="modal-body" style="text-align:center;"><img id="export-img" style="max-width:100%;border-radius:8px;box-shadow:var(--shadow);"><p class="hint-text">长按图片可保存，或点击下方下载</p></div>
+    <div class="modal-foot"><a class="btn primary" id="btn-download" download="猫糕玩毛线-作品集.png">下载图片</a></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ========== IndexedDB ========== */
+const DB_NAME='cat-yarn-workbench',DB_VER=3;
+let db;
+function openDB(){
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open(DB_NAME,DB_VER);
+    req.onupgradeneeded=e=>{
+      const d=e.target.result;
+      if(!d.objectStoreNames.contains('projects')) d.createObjectStore('projects',{keyPath:'id'});
+      if(!d.objectStoreNames.contains('counters')) d.createObjectStore('counters',{keyPath:'id'});
+      if(!d.objectStoreNames.contains('patterns')) d.createObjectStore('patterns',{keyPath:'id'});
+      if(!d.objectStoreNames.contains('works')) d.createObjectStore('works',{keyPath:'id'});
+      if(!d.objectStoreNames.contains('materials')) d.createObjectStore('materials',{keyPath:'id'});
+    };
+    req.onsuccess=e=>{db=e.target.result;res(db)};
+    req.onerror=e=>rej(e.target.error);
+  });
+}
+function dbAdd(s,v){return new Promise((res,rej)=>{const r=db.transaction(s,'readwrite').objectStore(s).add(v);r.onsuccess=()=>res(v);r.onerror=()=>rej(r.error);});}
+function dbPut(s,v){return new Promise((res,rej)=>{const r=db.transaction(s,'readwrite').objectStore(s).put(v);r.onsuccess=()=>res(v);r.onerror=()=>rej(r.error);});}
+function dbDel(s,id){return new Promise((res,rej)=>{const r=db.transaction(s,'readwrite').objectStore(s).delete(id);r.onsuccess=()=>res();r.onerror=()=>rej(r.error);});}
+function dbAll(s){return new Promise((res,rej)=>{const r=db.transaction(s).objectStore(s).getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error);});}
+
+/* ========== Utils ========== */
+const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
+function readFile(f){return new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(f);});}
+function fmtDate(ts){if(!ts)return '—';const d=new Date(ts);return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;}
+function fmtTime(sec){const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;}
+function fmtDuration(sec){if(!sec||sec<1)return '—';const m=Math.floor(sec/60),s=Math.floor(sec%60);if(m)return `${m}分${s}秒`;return `${s}秒`;}
+function todayKey(){const d=new Date();return `cyw-today-${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;}
+function getToday(){const k=todayKey();const v=localStorage.getItem(k);return v?parseInt(v,10):0;}
+function addToday(n){const k=todayKey();localStorage.setItem(k,String(getToday()+n));}
+
+/* ========== State ========== */
+let projects=[],counters=[],patterns=[],works=[],materials=[];
+let currentProjectId=null,currentCounterId=null,currentPatternId=null,currentWorkId=null,currentMaterialId=null;
+let currentBlueprintBlob=null,currentPatternBlob=null,currentWorkBlob=null,currentWorkPhotos=[],currentMaterialBlob=null;
+
+/* ========== Nav ========== */
+const pageTitles={projects:'作品进度',counters:'计数器',patterns:'花样参考',calc:'密度计算',works:'作品记录',materials:'线材管理',stats:'统计',export:'数据导出',about:'关于'};
+function switchView(v){
+  stopProjectTimer();
+  $$('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.view===v));
+  $$('.view').forEach(x=>x.classList.toggle('active',x.id==='view-'+v));
+  $('#page-title').textContent=pageTitles[v];
+  $('#topbar-actions').innerHTML='';
+  $('#sidebar').classList.remove('open');
+  $('#overlay').classList.remove('show');
+  if(v==='projects') renderProjects();
+  if(v==='counters') renderCounters();
+  if(v==='patterns') renderPatterns();
+  if(v==='works') renderWorks();
+  if(v==='materials') renderMaterials();
+  if(v==='stats') renderStats();
+  if(v==='export') renderExport();
+}
+$$('.nav-item').forEach(n=>n.addEventListener('click',()=>switchView(n.dataset.view)));
+$('#menu-toggle').addEventListener('click',()=>{$('#sidebar').classList.toggle('open');$('#overlay').classList.toggle('show');});
+$('#overlay').addEventListener('click',()=>{$('#sidebar').classList.remove('open');$('#overlay').classList.remove('show');});
+
+/* ========== Modal ========== */
+function openM(id){$('#'+id).classList.add('show');}
+function closeM(id){$('#'+id).classList.remove('show');}
+$$('[data-close]').forEach(el=>el.addEventListener('click',()=>el.closest('.modal-mask').classList.remove('show')));
+$$('.modal-mask').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');}));
+
+/* ========== Projects ========== */
+function renderProjects(){
+  const total=projects.length,doing=projects.filter(p=>p.status==='进行中').length,done=projects.filter(p=>p.status==='已完成').length;
+  $('#project-stats').innerHTML=`<div class="card stat"><div class="num">${total}</div><div class="lbl">项目总数</div></div><div class="card stat"><div class="num">${doing}</div><div class="lbl">进行中</div></div><div class="card stat"><div class="num">${done}</div><div class="lbl">已完成</div></div>`;
+  $('#topbar-actions').innerHTML=`<button class="btn primary" id="btn-new-project">＋ 新建项目</button>`;
+  $('#btn-new-project').addEventListener('click',()=>openProjectModal());
+  const list=$('#project-list');
+  if(projects.length===0){list.innerHTML=`<div class="empty"><svg viewBox="0 0 120 120" fill="none"><rect x="20" y="30" width="80" height="70" rx="8" stroke="var(--line)" stroke-width="3"/><path d="M35 45h50M35 60h50M35 75h30" stroke="var(--line)" stroke-width="3" stroke-linecap="round"/></svg><p>还没有项目，点击右上角「新建项目」开始吧</p></div>`;return;}
+  list.innerHTML=`<div class="grid">`+projects.sort((a,b)=>(b.updated||b.created)-(a.updated||a.created)).map(p=>{
+    const linked=counters.filter(c=>c.projectId===p.id);
+    const cur=linked.reduce((s,c)=>s+(c.current||0),0);
+    const pct=p.target&&p.target>0?Math.min(100,Math.round(cur/p.target*100)):0;
+    return `<div class="card" style="padding:16px;cursor:pointer;position:relative;" data-id="${p.id}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div style="font-weight:600;font-size:15px;margin-bottom:4px;">${p.name||'未命名'}</div>
+          <span class="badge ${p.status==='计划中'?'plan':p.status==='进行中'?'progress':'done'}">${p.status||'计划中'}</span>
+          ${p.needle?`<span class="tag-pill outline">${p.needle}</span>`:''}
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          ${p.blueprint&&p.blueprint.img?`<img class="img-thumb" src="${p.blueprint.img}">`:''}
+          <button class="btn sm btn-project-detail" data-id="${p.id}" title="进入计数器" style="border-radius:50%;width:34px;height:34px;padding:0;display:flex;align-items:center;justify-content:center;font-size:18px;">＋</button>
+        </div>
+      </div>
+      ${p.target?`<div style="margin-top:10px;"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);"><span>进度 ${cur}/${p.target} 行</span><span>${pct}%</span></div><div class="progress-bar"><div style="width:${pct}%;"></div></div></div>`:''}
+      <div style="margin-top:10px;font-size:12px;color:var(--ink-mute);display:flex;gap:10px;flex-wrap:wrap;">
+        ${p.materials&&p.materials.length?`<span>🧶 ${p.materials.length} 种线材</span>`:''}
+        <span>更新于 ${fmtDate(p.updated||p.created)}</span>
+      </div>
+    </div>`;
+  }).join('')+`</div>`;
+  $$('#project-list .card').forEach(c=>c.addEventListener('click',()=>openProjectModal(c.dataset.id)));
+  $$('.btn-project-detail').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();openProjectDetail(b.dataset.id);}));
+}
+function openProjectModal(id){
+  currentProjectId=id||null;currentBlueprintBlob=null;
+  $('#modal-project-title').textContent=id?'编辑项目':'新建项目';
+  const p=id?projects.find(x=>x.id===id):null;
+  $('#pr-name').value=p?p.name:'';
+  $('#pr-status').value=p?(p.status||'计划中'):'计划中';
+  $('#pr-needle').value=p?p.needle:'';
+  $('#pr-desc').value=p?p.desc:'';
+  $('#pr-link').value=p&&p.blueprint?p.blueprint.link:'';
+  $('#pr-blueprint-note').value=p&&p.blueprint?p.blueprint.note:'';
+  $('#pr-target').value=p?p.target:'';
+  const bp=$('#blueprint-preview');bp.style.display='none';
+  if(p&&p.blueprint&&p.blueprint.img){bp.src=p.blueprint.img;bp.style.display='block';currentBlueprintBlob=p.blueprint.img;}
+  const ml=$('#materials-list');ml.innerHTML='';
+  const mats=p&&p.materials?p.materials:[];if(mats.length===0) addMaterialRow(); else mats.forEach(m=>addMaterialRow(m));
+  const delBtn=$('#btn-del-project');delBtn.style.display=id?'inline-flex':'none';
+  openM('modal-project');
+}
+function addMaterialRow(m){
+  const div=document.createElement('div');div.className='material-row';
+  div.innerHTML=`<input type="text" placeholder="名称/颜色" class="m-name" value="${m?m.name:''}"><input type="text" placeholder="用量(g)" class="m-amount" value="${m?m.amount:''}"><span class="del-icon" title="删除">✕</span>`;
+  div.querySelector('.del-icon').addEventListener('click',()=>div.remove());
+  $('#materials-list').appendChild(div);
+}
+$('#btn-add-material').addEventListener('click',()=>addMaterialRow());
+$('#btn-pick-material').addEventListener('click',()=>openMaterialPicker());
+const dzBp=$('#dropzone-blueprint');
+dzBp.addEventListener('click',()=>$('#blueprint-file').click());
+$('#blueprint-file').addEventListener('change',async e=>{const f=e.target.files[0];if(f){const d=await readFile(f);currentBlueprintBlob=d;const img=$('#blueprint-preview');img.src=d;img.style.display='block';}});
+dzBp.addEventListener('dragover',e=>{e.preventDefault();dzBp.classList.add('over');});
+dzBp.addEventListener('dragleave',()=>dzBp.classList.remove('over'));
+dzBp.addEventListener('drop',async e=>{e.preventDefault();dzBp.classList.remove('over');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/')){const d=await readFile(f);currentBlueprintBlob=d;const img=$('#blueprint-preview');img.src=d;img.style.display='block';}});
+document.addEventListener('paste',async e=>{if(!$('#modal-project').classList.contains('show'))return;const items=e.clipboardData&&e.clipboardData.items?Array.from(e.clipboardData.items):[];for(const it of items){if(it.type.startsWith('image/')){const f=it.getAsFile();if(f){const d=await readFile(f);currentBlueprintBlob=d;const img=$('#blueprint-preview');img.src=d;img.style.display='block';break;}}}});
+$('#btn-save-project').addEventListener('click',async ()=>{
+  const name=$('#pr-name').value.trim();if(!name){toast('请填写项目名称');return;}
+  const mats=[];$$('#materials-list .material-row').forEach(r=>{const n=r.querySelector('.m-name').value.trim(),a=r.querySelector('.m-amount').value.trim();if(n||a)mats.push({name:n,amount:a});});
+  const oldP=currentProjectId?projects.find(x=>x.id===currentProjectId):null;
+  const p={id:currentProjectId||uid(),name,status:$('#pr-status').value,needle:$('#pr-needle').value.trim(),desc:$('#pr-desc').value.trim(),materials:mats,blueprint:{img:currentBlueprintBlob||null,link:$('#pr-link').value.trim(),note:$('#pr-blueprint-note').value.trim()},target:$('#pr-target').value?parseInt($('#pr-target').value,10):null,totalSeconds:oldP?(oldP.totalSeconds||0):0,created:currentProjectId?(oldP.created):Date.now(),updated:Date.now()};
+  if(currentProjectId){await dbPut('projects',p);projects=projects.map(x=>x.id===p.id?p:x);}
+  else{await dbAdd('projects',p);projects.push(p);}
+  closeM('modal-project');renderProjects();toast('项目已保存 ✓');
+});
+$('#btn-del-project').addEventListener('click',async ()=>{if(!currentProjectId||!confirm('确定删除这个项目吗？关联的计数器将不再统计其进度。'))return;await dbDel('projects',currentProjectId);projects=projects.filter(x=>x.id!==currentProjectId);closeM('modal-project');renderProjects();toast('已删除');});
+
+/* ========== Project Detail Counter ========== */
+let activeProjectId=null,activeCounterId=null,projectTimerInterval=null,projectTimerElapsed=0,projectTimerRunning=false;
+async function openProjectDetail(id){
+  activeProjectId=id;
+  let c=counters.find(x=>x.projectId===id);
+  if(!c){
+    const p=projects.find(x=>x.id===id);
+    c={id:uid(),name:(p.name||'项目')+' 计数',projectId:id,target:p.target||null,current:0,history:[],note:'',created:Date.now()};
+    await dbAdd('counters',c);counters.push(c);
+  }
+  activeCounterId=c.id;
+  const p=projects.find(x=>x.id===id);
+  projectTimerElapsed=p.totalSeconds||0;
+  stopProjectTimer();
+  $$('.view').forEach(x=>x.classList.remove('active'));
+  $('#view-project-detail').classList.add('active');
+  $('#page-title').textContent='项目计数器';
+  $('#topbar-actions').innerHTML='';
+  $$('.nav-item').forEach(n=>n.classList.remove('active'));
+  renderProjectDetail();
+}
+function renderProjectDetail(){
+  const p=projects.find(x=>x.id===activeProjectId);if(!p)return;
+  const c=counters.find(x=>x.id===activeCounterId);
+  $('#pd-project-name').textContent=p.name||'未命名';
+  const st=p.status||'计划中';
+  const stBadge=$('#pd-project-status');stBadge.textContent=st;stBadge.className='badge '+(st==='计划中'?'plan':st==='进行中'?'progress':'done');
+  $('#pd-project-needle').textContent=p.needle||'—';$('#pd-project-needle').style.display=p.needle?'inline-block':'none';
+  $('#pd-counter-current').textContent=c?(c.current||0):0;
+  $('#pd-counter-target').textContent=p.target||'-';
+  const pct=p.target&&p.target>0&&c?Math.min(100,Math.round((c.current||0)/p.target*100)):0;
+  $('#pd-progress-wrap').innerHTML=p.target?`<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);margin-bottom:4px;"><span>进度</span><span>${pct}%</span></div><div class="progress-bar"><div style="width:${pct}%;"></div></div>`:'';
+  const hist=$('#pd-history');
+  hist.innerHTML=(c&&c.history||[]).slice().reverse().map(h=>`<div class="history-item"><span>第 ${h.value} 行 · ${new Date(h.time).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span><span>用时 ${fmtDuration(h.duration)}</span></div>`).join('')||'<div class="history-item"><span>暂无记录</span></div>';
+  updateProjectTimerDisplay();
+  $('#pd-info-needle').textContent=p.needle||'—';
+  $('#pd-info-desc').textContent=p.desc||'—';
+  const mw=$('#pd-info-materials-wrap');
+  if(p.materials&&p.materials.length){mw.style.display='block';$('#pd-info-materials').innerHTML=p.materials.map(m=>`<div style="font-size:14px;color:var(--ink-soft);margin-bottom:4px;">${m.name||''}${m.amount?' · '+m.amount:''}</div>`).join('');}
+  else{mw.style.display='none';}
+  const bw=$('#pd-info-blueprint-wrap');
+  if((p.blueprint&&p.blueprint.img)||(p.blueprint&&p.blueprint.link)||(p.blueprint&&p.blueprint.note)){
+    bw.style.display='block';let html='';
+    if(p.blueprint.img)html+=`<img class="preview-img" src="${p.blueprint.img}" style="display:block;max-height:180px;">`;
+    if(p.blueprint.link)html+=`<div style="margin-bottom:6px;"><a href="${p.blueprint.link}" target="_blank" style="color:var(--accent);word-break:break-all;">${p.blueprint.link}</a></div>`;
+    if(p.blueprint.note)html+=`<div style="color:var(--ink-soft);font-size:13px;white-space:pre-wrap;">${p.blueprint.note}</div>`;
+    $('#pd-info-blueprint').innerHTML=html;
+  }else{bw.style.display='none';}
+}
+function updateProjectTimerDisplay(){$('#pd-timer-display').textContent=fmtTime(projectTimerElapsed);$('#pd-total-minutes').textContent=Math.round(projectTimerElapsed/60);}
+function startProjectTimer(){
+  if(projectTimerRunning)return;projectTimerRunning=true;
+  $('#pd-timer-toggle').textContent='⏸ 暂停计时';
+  projectTimerInterval=setInterval(async ()=>{
+    projectTimerElapsed++;
+    updateProjectTimerDisplay();
+    const p=projects.find(x=>x.id===activeProjectId);
+    if(p){p.totalSeconds=projectTimerElapsed;p.updated=Date.now();await dbPut('projects',p);}
+  },1000);
+}
+function stopProjectTimer(){
+  if(!projectTimerRunning)return;projectTimerRunning=false;
+  $('#pd-timer-toggle').textContent='▶ 开始计时';
+  clearInterval(projectTimerInterval);
+}
+async function pdChangeCounter(delta){
+  const c=counters.find(x=>x.id===activeCounterId);if(!c)return;
+  const last=c.history&&c.history.length?c.history[c.history.length-1]:null;
+  const now=Date.now();
+  const duration=last?(now-last.time)/1000:0;
+  c.current=Math.max(0,(c.current||0)+delta);
+  if(!c.history)c.history=[];
+  c.history.push({time:now,value:c.current,duration:Math.max(0,duration)});
+  await dbPut('counters',c);
+  const p=projects.find(x=>x.id===activeProjectId);if(p){p.updated=now;await dbPut('projects',p);}
+  renderProjectDetail();
+}
+async function pdResetCounter(){if(!confirm('确定重置计数器吗？'))return;const c=counters.find(x=>x.id===activeCounterId);if(!c)return;c.current=0;c.history=[];await dbPut('counters',c);renderProjectDetail();}
+function pdToggleHistory(){const el=$('#pd-history'),btn=$('#pd-toggle-history');if(el.style.display==='none'){el.style.display='block';btn.textContent='收起记录';}else{el.style.display='none';btn.textContent='展开记录';}}
+async function pdCycleStatus(){
+  const p=projects.find(x=>x.id===activeProjectId);if(!p)return;
+  const order=['计划中','进行中','已完成'];const idx=order.indexOf(p.status||'计划中');
+  p.status=order[(idx+1)%order.length];p.updated=Date.now();
+  await dbPut('projects',p);renderProjectDetail();
+}
+$('#btn-back-project').addEventListener('click',()=>{stopProjectTimer();switchView('projects');});
+$('#pd-counter-plus').addEventListener('click',()=>pdChangeCounter(1));
+$('#pd-counter-minus').addEventListener('click',()=>pdChangeCounter(-1));
+$('#pd-counter-reset').addEventListener('click',pdResetCounter);
+$('#pd-toggle-history').addEventListener('click',pdToggleHistory);
+$('#pd-timer-toggle').addEventListener('click',()=>projectTimerRunning?stopProjectTimer():startProjectTimer());
+$('#pd-project-status').addEventListener('click',pdCycleStatus);
+
+/* ========== Counters ========== */
+let timerInterval=null,timerElapsed=0,timerRunning=false;
+function updateTimerDisplay(){$('#timer-display').textContent=fmtTime(timerElapsed);$('#today-time').textContent=Math.round(getToday()/60)+' 分钟';}
+function startTimer(){if(timerRunning)return;timerRunning=true;$('#timer-toggle').textContent='⏸ 暂停';timerInterval=setInterval(()=>{timerElapsed++;addToday(1);updateTimerDisplay();},1000);}
+function pauseTimer(){if(!timerRunning)return;timerRunning=false;$('#timer-toggle').textContent='▶ 开始';clearInterval(timerInterval);}
+function resetTimer(){pauseTimer();timerElapsed=0;updateTimerDisplay();}
+$('#timer-toggle').addEventListener('click',()=>timerRunning?pauseTimer():startTimer());
+$('#timer-reset').addEventListener('click',resetTimer);
+
+function renderCounters(){
+  const list=$('#counter-list');
+  if(counters.length===0){list.innerHTML=`<div class="empty"><svg viewBox="0 0 120 120" fill="none"><circle cx="60" cy="60" r="45" stroke="var(--line)" stroke-width="3"/><path d="M45 60h30M60 45v30" stroke="var(--line)" stroke-width="3" stroke-linecap="round"/></svg><p>还没有计数项目，点击「新增计数项目」开始</p></div>`;return;}
+  list.innerHTML=`<div class="grid">`+counters.map(c=>{
+    const p=c.projectId?projects.find(x=>x.id===c.projectId):null;
+    const pct=c.target&&c.target>0?Math.min(100,Math.round((c.current||0)/c.target*100)):0;
+    return `<div class="card counter-card" data-id="${c.id}">
+      <div class="counter-header">
+        <div><div class="counter-name">${c.name||'未命名'}</div><div class="counter-meta">${p?p.name:'未关联'} · 目标 ${c.target||'-'} 行</div></div>
+        <div style="display:flex;gap:8px;"><span class="del-icon btn-edit-counter" data-id="${c.id}">✎</span><span class="del-icon btn-del-counter" data-id="${c.id}">✕</span></div>
+      </div>
+      <div class="counter-display">${c.current||0}</div>
+      <div style="text-align:center;color:var(--ink-soft);font-size:13px;margin-bottom:8px;">行 / 圈</div>
+      <div class="counter-actions">
+        <button class="counter-btn minus btn-counter-minus" data-id="${c.id}">−</button>
+        <button class="counter-btn btn-counter-plus" data-id="${c.id}">＋</button>
+      </div>
+      ${c.target?`<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);"><span>进度</span><span>${pct}%</span></div><div class="progress-bar"><div style="width:${pct}%"></div></div></div>`:''}
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <button class="btn sm btn-toggle-history" data-id="${c.id}" style="flex:1;">展开 (${c.history?c.history.length:0})</button>
+        <button class="btn sm btn-reset-counter" data-id="${c.id}">↺ 重置</button>
+      </div>
+      <div class="history-list" id="history-${c.id}" style="display:none;margin-bottom:10px;">
+        ${(c.history||[]).slice().reverse().map(h=>`<div class="history-item"><span>第 ${h.value} 行 · ${new Date(h.time).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span><span>用时 ${fmtDuration(h.duration)}</span></div>`).join('')||'<div class="history-item"><span>暂无记录</span></div>'}
+      </div>
+      <textarea class="counter-note" data-id="${c.id}" rows="2" placeholder="针法变化、加减针位置、注意事项…" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px;">${c.note||''}</textarea>
+    </div>`;
+  }).join('')+`</div>`;
+  $$('.btn-counter-plus').forEach(b=>b.addEventListener('click',()=>changeCounter(b.dataset.id,1)));
+  $$('.btn-counter-minus').forEach(b=>b.addEventListener('click',()=>changeCounter(b.dataset.id,-1)));
+  $$('.btn-reset-counter').forEach(b=>b.addEventListener('click',()=>resetCounter(b.dataset.id)));
+  $$('.btn-toggle-history').forEach(b=>b.addEventListener('click',()=>toggleHistory(b.dataset.id,b)));
+  $$('.btn-edit-counter').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();openCounterModal(b.dataset.id);}));
+  $$('.btn-del-counter').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();deleteCounter(b.dataset.id);}));
+  $$('.counter-note').forEach(ta=>ta.addEventListener('change',()=>saveCounterNote(ta.dataset.id,ta.value)));
+}
+async function changeCounter(id,delta){
+  const c=counters.find(x=>x.id===id);if(!c)return;
+  const last=c.history&&c.history.length?c.history[c.history.length-1]:null;
+  const now=Date.now();
+  const duration=last?(now-last.time)/1000:0;
+  c.current=Math.max(0,(c.current||0)+delta);
+  if(!c.history)c.history=[];
+  c.history.push({time:now,value:c.current,duration:Math.max(0,duration)});
+  await dbPut('counters',c);renderCounters();
+}
+async function resetCounter(id){if(!confirm('确定重置该计数器吗？'))return;const c=counters.find(x=>x.id===id);if(!c)return;c.current=0;c.history=[];await dbPut('counters',c);renderCounters();}
+function toggleHistory(id,btn){const el=$('#history-'+id);const len=(counters.find(x=>x.id===id).history||[]).length;if(el.style.display==='none'){el.style.display='block';btn.textContent='收起 ('+len+')';}else{el.style.display='none';btn.textContent='展开 ('+len+')';}}
+async function saveCounterNote(id,note){const c=counters.find(x=>x.id===id);if(!c)return;c.note=note;await dbPut('counters',c);}
+async function deleteCounter(id){if(!confirm('确定删除这个计数项目吗？'))return;await dbDel('counters',id);counters=counters.filter(x=>x.id!==id);renderCounters();}
+function openCounterModal(id){
+  currentCounterId=id||null;
+  $('#modal-counter-title').textContent=id?'编辑计数项目':'新增计数项目';
+  const c=id?counters.find(x=>x.id===id):null;
+  $('#c-name').value=c?c.name:'';
+  const sel=$('#c-project');sel.innerHTML='<option value="">无</option>'+projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  sel.value=c?c.projectId||'':'';
+  $('#c-target').value=c?c.target:'';
+  openM('modal-counter');
+}
+$('#btn-new-counter').addEventListener('click',()=>openCounterModal());
+$('#btn-save-counter').addEventListener('click',async ()=>{
+  const name=$('#c-name').value.trim();if(!name){toast('请填写计数项目名称');return;}
+  const old=currentCounterId?counters.find(x=>x.id===currentCounterId):null;
+  const c={id:currentCounterId||uid(),name,projectId:$('#c-project').value||null,target:$('#c-target').value?parseInt($('#c-target').value,10):null,current:old?(old.current||0):0,history:old?(old.history||[]):[],note:old?(old.note||''):'',created:old?old.created:Date.now()};
+  if(currentCounterId){await dbPut('counters',c);counters=counters.map(x=>x.id===c.id?c:x);}
+  else{await dbAdd('counters',c);counters.push(c);}
+  closeM('modal-counter');renderCounters();toast('计数项目已保存 ✓');
+});
+
+/* ========== Patterns ========== */
+function renderPatterns(){
+  const grid=$('#pattern-grid');
+  if(patterns.length===0){grid.innerHTML=`<div class="empty"><svg viewBox="0 0 120 120" fill="none"><path d="M60 20 L80 40 L80 80 L60 100 L40 80 L40 40 Z" stroke="var(--line)" stroke-width="3"/><circle cx="60" cy="60" r="15" stroke="var(--line)" stroke-width="3"/></svg><p>还没有花样，点击「上传图样」开始收藏吧</p></div>`;return;}
+  grid.innerHTML=`<div class="grid">`+patterns.sort((a,b)=>b.created-a.created).map(p=>patternCard(p)).join('')+`</div>`;
+  $$('.pattern-card').forEach(c=>c.addEventListener('click',()=>showPatternDetail(c.dataset.id)));
+}
+function patternCard(p){
+  return `<div class="card pattern-card" style="cursor:pointer;overflow:hidden;" data-id="${p.id}">
+    <img class="thumb" src="${p.img||''}" style="width:100%;aspect-ratio:1;object-fit:cover;background:var(--bg);" loading="lazy">
+    <div style="padding:12px;">
+      <div style="font-weight:600;font-size:14px;margin-bottom:4px;">${p.name||'未命名'}</div>
+      <div style="font-size:12px;color:var(--ink-mute);margin-bottom:6px;">
+        ${p.groupSts?`<span class="tag-pill">${p.groupSts} 针</span>`:''}
+        ${p.groupRows?`<span class="tag-pill">${p.groupRows} 行</span>`:''}
+        ${p.cat?`<span class="tag-pill outline">${p.cat}</span>`:''}
+      </div>
+      <div style="font-size:12px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.note||''}</div>
+    </div>
+  </div>`;
+}
+function doSearchPattern(){
+  const n=$('#pattern-search-num').value.trim();
+  if(!n){renderPatterns();return;}
+  const num=parseInt(n,10);
+  const filtered=patterns.filter(p=>p.groupSts===num);
+  const grid=$('#pattern-grid');
+  if(filtered.length===0){grid.innerHTML=`<div class="empty"><p>没有找到单组 ${num} 针的花样</p></div>`;return;}
+  grid.innerHTML=`<div class="grid">`+filtered.sort((a,b)=>b.created-a.created).map(p=>patternCard(p)).join('')+`</div>`;
+  $$('.pattern-card').forEach(c=>c.addEventListener('click',()=>showPatternDetail(c.dataset.id)));
+}
+$('#btn-search-pattern').addEventListener('click',doSearchPattern);
+$('#pattern-search-num').addEventListener('keydown',e=>{if(e.key==='Enter')doSearchPattern();});
+$('#btn-all-pattern').addEventListener('click',()=>{$('#pattern-search-num').value='';renderPatterns();});
+$('#btn-upload-pattern').addEventListener('click',()=>{currentPatternBlob=null;$('#pattern-preview').style.display='none';$('#p-name').value='';$('#p-sts').value='';$('#p-rows').value='';$('#p-cat').value='';$('#p-note').value='';openM('modal-pattern');});
+const dzPat=$('#dropzone-pattern');
+dzPat.addEventListener('click',()=>$('#pattern-file').click());
+$('#pattern-file').addEventListener('change',async e=>{const f=e.target.files[0];if(f){const d=await readFile(f);currentPatternBlob=d;const img=$('#pattern-preview');img.src=d;img.style.display='block';}});
+dzPat.addEventListener('dragover',e=>{e.preventDefault();dzPat.classList.add('over');});
+dzPat.addEventListener('dragleave',()=>dzPat.classList.remove('over'));
+dzPat.addEventListener('drop',async e=>{e.preventDefault();dzPat.classList.remove('over');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/')){const d=await readFile(f);currentPatternBlob=d;const img=$('#pattern-preview');img.src=d;img.style.display='block';}});
+document.addEventListener('paste',async e=>{if(!$('#modal-pattern').classList.contains('show'))return;const items=e.clipboardData&&e.clipboardData.items?Array.from(e.clipboardData.items):[];for(const it of items){if(it.type.startsWith('image/')){const f=it.getAsFile();if(f){const d=await readFile(f);currentPatternBlob=d;const img=$('#pattern-preview');img.src=d;img.style.display='block';break;}}}});
+$('#btn-save-pattern').addEventListener('click',async ()=>{
+  const name=$('#p-name').value.trim();if(!name){toast('请填写花样名称');return;}if(!currentPatternBlob){toast('请上传图样图片');return;}
+  const p={id:uid(),name,img:currentPatternBlob,groupSts:$('#p-sts').value?parseInt($('#p-sts').value,10):null,groupRows:$('#p-rows').value?parseInt($('#p-rows').value,10):null,cat:$('#p-cat').value.trim(),note:$('#p-note').value.trim(),created:Date.now()};
+  await dbAdd('patterns',p);patterns.push(p);closeM('modal-pattern');renderPatterns();toast('图样已保存 ✓');
+});
+function showPatternDetail(id){
+  const p=patterns.find(x=>x.id===id);if(!p)return;currentPatternId=id;
+  $('#pd-title').textContent=p.name||'未命名';
+  $('#pd-body').innerHTML=`<img class="preview-img" src="${p.img}" style="display:block;max-height:260px;">
+    <div class="row"><div class="field"><label>单组花样针数</label><div>${p.groupSts||'—'}</div></div><div class="field"><label>单组花样行数</label><div>${p.groupRows||'—'}</div></div></div>
+    <div class="field"><label>分类</label><div>${p.cat||'—'}</div></div>
+    <div class="field"><label>花样说明</label><div style="color:var(--ink-soft);white-space:pre-wrap;">${p.note||'—'}</div></div>`;
+  openM('modal-pattern-detail');
+}
+$('#btn-del-pattern').addEventListener('click',async ()=>{if(!currentPatternId||!confirm('确定删除这个图样吗？'))return;await dbDel('patterns',currentPatternId);patterns=patterns.filter(x=>x.id!==currentPatternId);closeM('modal-pattern-detail');renderPatterns();toast('已删除');});
+
+/* ========== Calc ========== */
+$('#calc-mode').addEventListener('click',e=>{if(e.target.tagName!=='BUTTON')return;$$('#calc-mode button').forEach(b=>b.classList.remove('active'));e.target.classList.add('active');const m=e.target.dataset.mode;$('#form-density').style.display=m==='density'?'block':'none';$('#form-estimate').style.display=m==='estimate'?'block':'none';$('#calc-empty').style.display='block';$('#calc-output').style.display='none';});
+$('#btn-calc').addEventListener('click',()=>{$('#calc-mode button.active').dataset.mode==='density'?calcDensity():calcEstimate();});
+function calcDensity(){
+  const sts=parseFloat($('#d-stitches').value),rows=parseFloat($('#d-rows').value),w=parseFloat($('#d-width').value),l=parseFloat($('#d-length').value);
+  if(!sts||!rows||!w||!l||sts<=0||rows<=0||w<=0||l<=0){toast('请填写完整且大于 0 的数值');return;}
+  const spc=sts/w,rpc=rows/l;const s10=spc*10,r10=rpc*10;
+  $('#calc-empty').style.display='none';$('#calc-output').style.display='block';
+  $('#calc-output').innerHTML=`<div style="text-align:center;margin-bottom:16px;"><div class="big">${s10.toFixed(1)}<span style="font-size:14px;color:var(--ink-mute);margin:0 4px;">针</span>×${r10.toFixed(1)}<span style="font-size:14px;color:var(--ink-mute);margin-left:4px;">行</span></div><div style="color:var(--ink-mute);font-size:13px;">10×10cm 标准密度</div></div>
+    <div class="row-item"><span class="label">每 1cm 针数</span><span class="val">${spc.toFixed(2)} 针</span></div>
+    <div class="row-item"><span class="label">每 1cm 行数</span><span class="val">${rpc.toFixed(2)} 行</span></div>
+    <div class="row-item"><span class="label">样片尺寸</span><span class="val">${w} × ${l} cm</span></div>`;
+}
+function calcEstimate(){
+  const spc=parseFloat($('#e-sts').value),rpc=parseFloat($('#e-rows').value),w=parseFloat($('#e-width').value),l=parseFloat($('#e-length').value);
+  if(!spc||!rpc||!w||!l||spc<=0||rpc<=0||w<=0||l<=0){toast('请填写完整且大于 0 的数值');return;}
+  const ns=spc*w,nr=rpc*l;
+  $('#calc-empty').style.display='none';$('#calc-output').style.display='block';
+  $('#calc-output').innerHTML=`<div style="text-align:center;margin-bottom:16px;"><div class="big">${Math.round(ns)}<span style="font-size:14px;color:var(--ink-mute);margin:0 4px;">针</span>×${Math.round(nr)}<span style="font-size:14px;color:var(--ink-mute);margin-left:4px;">行</span></div><div style="color:var(--ink-mute);font-size:13px;">目标 ${w}×${l}cm 所需</div></div>
+    <div class="row-item"><span class="label">起针数</span><span class="val">${Math.ceil(ns)} 针</span></div>
+    <div class="row-item"><span class="label">总行数</span><span class="val">${Math.ceil(nr)} 行</span></div>
+    <div class="row-item"><span class="label">密度依据</span><span class="val">${spc} 针/cm · ${rpc} 行/cm</span></div>`;
+}
+
+/* ========== Works ========== */
+function renderWorks(){
+  $('#topbar-actions').innerHTML=`<button class="btn" id="btn-export-works">导出长图</button><button class="btn primary" id="btn-new-work">＋ 新增作品</button>`;
+  $('#btn-new-work').addEventListener('click',openWorkModal);
+  $('#btn-export-works').addEventListener('click',exportWorks);
+  const list=$('#works-list');
+  if(works.length===0){list.innerHTML=`<div class="empty"><svg viewBox="0 0 120 120" fill="none"><rect x="25" y="20" width="70" height="85" rx="6" stroke="var(--line)" stroke-width="3"/><path d="M40 45h40M40 60h40M40 75h25" stroke="var(--line)" stroke-width="3" stroke-linecap="round"/></svg><p>还没有作品记录，把第一件作品记下来吧</p></div>`;return;}
+  list.innerHTML=`<div class="grid">`+works.sort((a,b)=>(b.date||b.created)-(a.date||a.created)).map(w=>{
+    const img=w.img||(w.photos&&w.photos.length?w.photos[0]:null);
+    return `<div class="card work-card" style="cursor:pointer;overflow:hidden;" data-id="${w.id}">
+      ${img?`<img src="${img}" style="width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--bg);">`:''}
+      <div style="padding:14px;">
+        <div style="font-weight:600;font-size:15px;margin-bottom:4px;">${w.name||'未命名'}</div>
+        <div style="font-size:12px;color:var(--ink-mute);display:flex;gap:8px;flex-wrap:wrap;">
+          ${w.yarn?`<span>🧶 ${w.yarn}</span>`:''}
+          ${w.hook?`<span>🪝 ${w.hook}</span>`:''}
+          ${w.date?`<span>📅 ${fmtDate(w.date)}</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('')+`</div>`;
+  $$('.work-card').forEach(c=>c.addEventListener('click',()=>showWorkDetail(c.dataset.id)));
+}
+function openWorkModal(){
+  currentWorkId=null;currentWorkBlob=null;currentWorkPhotos=[];
+  $('#w-name').value='';$('#w-yarn').value='';$('#w-hook').value='';$('#w-design').value='';$('#w-tips').value='';$('#w-note').value='';$('#w-date').value=new Date().toISOString().slice(0,10);
+  $('#work-preview').style.display='none';$('#photos-preview').innerHTML='';
+  openM('modal-work');
+}
+const dzWork=$('#dropzone-work'),dzPhotos=$('#dropzone-photos');
+dzWork.addEventListener('click',()=>$('#work-file').click());
+$('#work-file').addEventListener('change',async e=>{const f=e.target.files[0];if(f){const d=await readFile(f);currentWorkBlob=d;const img=$('#work-preview');img.src=d;img.style.display='block';}});
+dzPhotos.addEventListener('click',()=>$('#photos-file').click());
+$('#photos-file').addEventListener('change',async e=>{for(const f of Array.from(e.target.files)){if(f.type.startsWith('image/')){const d=await readFile(f);currentWorkPhotos.push(d);renderPhotoPreviews();}}});
+function renderPhotoPreviews(){
+  const g=$('#photos-preview');g.innerHTML=currentWorkPhotos.map((src,i)=>`<div style="position:relative;"><img class="img-thumb" src="${src}"><span class="del-icon" data-idx="${i}" style="position:absolute;top:-6px;right:-6px;background:#fff;border-radius:50%;padding:2px 5px;box-shadow:var(--shadow);">✕</span></div>`).join('');
+  $$('#photos-preview .del-icon').forEach(b=>b.addEventListener('click',()=>{currentWorkPhotos.splice(parseInt(b.dataset.idx),1);renderPhotoPreviews();}));
+}
+dzWork.addEventListener('dragover',e=>{e.preventDefault();dzWork.classList.add('over');});dzWork.addEventListener('dragleave',()=>dzWork.classList.remove('over'));
+dzWork.addEventListener('drop',async e=>{e.preventDefault();dzWork.classList.remove('over');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/')){const d=await readFile(f);currentWorkBlob=d;const img=$('#work-preview');img.src=d;img.style.display='block';}});
+dzPhotos.addEventListener('dragover',e=>{e.preventDefault();dzPhotos.classList.add('over');});dzPhotos.addEventListener('dragleave',()=>dzPhotos.classList.remove('over'));
+dzPhotos.addEventListener('drop',async e=>{e.preventDefault();dzPhotos.classList.remove('over');for(const f of Array.from(e.dataTransfer.files)){if(f.type.startsWith('image/')){const d=await readFile(f);currentWorkPhotos.push(d);}}renderPhotoPreviews();});
+$('#btn-save-work').addEventListener('click',async ()=>{
+  const name=$('#w-name').value.trim();if(!name){toast('请填写织物名称');return;}
+  const w={id:uid(),name,img:currentWorkBlob,yarn:$('#w-yarn').value.trim(),hook:$('#w-hook').value.trim(),design:$('#w-design').value.trim(),tips:$('#w-tips').value.trim(),photos:currentWorkPhotos,date:$('#w-date').value?new Date($('#w-date').value).getTime():Date.now(),note:$('#w-note').value.trim(),created:Date.now()};
+  await dbAdd('works',w);works.push(w);closeM('modal-work');renderWorks();toast('作品已保存 ✓');
+});
+function showWorkDetail(id){
+  const w=works.find(x=>x.id===id);if(!w)return;currentWorkId=id;
+  $('#wd-title').textContent=w.name||'未命名';
+  $('#wd-body').innerHTML=`${w.img?`<img class="preview-img" src="${w.img}" style="display:block;max-height:220px;">`:''}
+    <div class="row"><div class="field"><label>线材</label><div>${w.yarn||'—'}</div></div><div class="field"><label>钩针型号</label><div>${w.hook||'—'}</div></div></div>
+    <div class="row"><div class="field"><label>完成日期</label><div>${fmtDate(w.date)}</div></div></div>
+    <div class="field"><label>设计思路</label><div style="color:var(--ink-soft);white-space:pre-wrap;">${w.design||'—'}</div></div>
+    <div class="field"><label>钩织要点</label><div style="color:var(--ink-soft);white-space:pre-wrap;">${w.tips||'—'}</div></div>
+    <div class="field"><label>心得备注</label><div style="color:var(--ink-soft);white-space:pre-wrap;">${w.note||'—'}</div></div>
+    ${w.photos&&w.photos.length?`<div class="field"><label>成品实拍</label><div class="thumb-grid">${w.photos.map(src=>`<img class="img-thumb" src="${src}" style="width:80px;height:80px;">`).join('')}</div></div>`:''}`;
+  openM('modal-work-detail');
+}
+$('#btn-del-work').addEventListener('click',async ()=>{if(!currentWorkId||!confirm('确定删除这个作品记录吗？'))return;await dbDel('works',currentWorkId);works=works.filter(x=>x.id!==currentWorkId);closeM('modal-work-detail');renderWorks();toast('已删除');});
+
+/* ========== Export ========== */
+async function exportWorks(){
+  if(works.length===0){toast('还没有作品可导出');return;}
+  const sorted=[...works].sort((a,b)=>(a.date||a.created)-(b.date||b.created));
+  const W=400,H=120+sorted.length*340+80;
+  const cvs=document.createElement('canvas');cvs.width=W;cvs.height=H;const ctx=cvs.getContext('2d');
+  ctx.fillStyle='#EAF1F1';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#203535';ctx.font='bold 22px Georgia,serif';ctx.textAlign='center';ctx.fillText('猫糕玩毛线 · 作品集',W/2,50);
+  ctx.fillStyle='#557575';ctx.font='13px sans-serif';ctx.fillText(`共 ${sorted.length} 件 · ${fmtDate(Date.now())}`,W/2,78);
+  ctx.strokeStyle='#D5E3E3';ctx.beginPath();ctx.moveTo(24,100);ctx.lineTo(W-24,100);ctx.stroke();
+  function loadImg(src){return new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=src;});}
+  let y=120;
+  for(const w of sorted){
+    ctx.fillStyle='#fff';ctx.strokeStyle='#D5E3E3';ctx.beginPath();ctx.roundRect(24,y,W-48,320,12);ctx.fill();ctx.stroke();
+    const img=w.img||(w.photos&&w.photos.length?w.photos[0]:null);
+    if(img){const im=await loadImg(img);if(im){const iw=W-72,ih=180;ctx.save();ctx.beginPath();ctx.roundRect(36,y+16,iw,ih,8);ctx.clip();const r=Math.max(iw/im.width,ih/im.height);ctx.drawImage(im,36+(iw-im.width*r)/2,y+16+(ih-im.height*r)/2,im.width*r,im.height*r);ctx.restore();}}
+    else{ctx.fillStyle='#EAF1F1';ctx.beginPath();ctx.roundRect(36,y+16,W-72,180,8);ctx.fill();ctx.fillStyle='#88A5A5';ctx.font='12px sans-serif';ctx.textAlign='center';ctx.fillText('无照片',W/2,y+108);}
+    ctx.textAlign='left';ctx.fillStyle='#203535';ctx.font='bold 15px sans-serif';ctx.fillText(w.name||'未命名',36,y+220);
+    ctx.fillStyle='#557575';ctx.font='12px sans-serif';let ty=y+242;
+    if(w.date){ctx.fillText(`📅 ${fmtDate(w.date)}`,36,ty);ty+=18;}
+    if(w.yarn){ctx.fillText(`🧶 ${w.yarn}`,36,ty);ty+=18;}
+    if(w.hook){ctx.fillText(`🪝 ${w.hook}`,36,ty);ty+=18;}
+    y+=340;
+  }
+  const data=cvs.toDataURL('image/png');$('#export-img').src=data;$('#btn-download').href=data;openM('modal-export');
+}
+
+/* ========== Materials ========== */
+function renderMaterials(){
+  $('#topbar-actions').innerHTML=`<button class="btn primary" id="btn-new-material-top">＋ 添加线材</button>`;
+  $('#btn-new-material-top').addEventListener('click',()=>openMaterialModal());
+  const list=$('#material-list');
+  const q=$('#material-search').value.trim().toLowerCase();
+  let listData=materials;
+  if(q){listData=materials.filter(m=>(m.name+' '+m.brand+' '+m.color+' '+m.material).toLowerCase().includes(q));}
+  if(listData.length===0){list.innerHTML=`<div class="empty"><svg viewBox="0 0 120 120" fill="none"><circle cx="60" cy="35" r="20" stroke="var(--line)" stroke-width="3"/><path d="M40 55 Q60 90 80 55" stroke="var(--line)" stroke-width="3" fill="none"/></svg><p>${materials.length===0?'还没有线材，点击右上角添加吧':'没有匹配的线材'}</p></div>`;return;}
+  list.innerHTML=`<div class="grid">`+listData.sort((a,b)=>b.created-a.created).map(m=>`<div class="card" style="padding:14px;cursor:pointer;" data-id="${m.id}">
+    <div style="display:flex;gap:12px;">
+      ${m.img?`<img class="img-thumb" src="${m.img}" style="width:60px;height:60px;">`:''}
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:600;font-size:15px;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.name||'未命名'}</div>
+        <div style="font-size:12px;color:var(--ink-mute);margin-bottom:6px;">
+          ${m.brand?`<span class="tag-pill outline">${m.brand}</span>`:''}
+          ${m.color?`<span class="tag-pill outline">${m.color}</span>`:''}
+        </div>
+        <div style="font-size:13px;color:var(--ink-soft);">
+          ${m.material?m.material+' · ':''}${m.weight?m.weight:''}${m.unit||'g'}${m.price?' · ¥'+m.price:''}
+        </div>
+      </div>
+    </div>
+  </div>`).join('')+`</div>`;
+  $$('#material-list .card').forEach(c=>c.addEventListener('click',()=>openMaterialModal(c.dataset.id)));
+}
+$('#material-search').addEventListener('input',renderMaterials);
+function openMaterialModal(id){
+  currentMaterialId=id||null;currentMaterialBlob=null;
+  $('#modal-material-title').textContent=id?'编辑线材':'添加线材';
+  const m=id?materials.find(x=>x.id===id):null;
+  $('#m-name').value=m?m.name:'';$('#m-brand').value=m?m.brand:'';$('#m-color').value=m?m.color:'';$('#m-material').value=m?m.material:'';
+  $('#m-weight').value=m?m.weight:'';$('#m-needle').value=m?m.needle:'';$('#m-price').value=m?m.price:'';$('#m-note').value=m?m.note:'';
+  $$('#m-unit button').forEach(b=>b.classList.toggle('active',b.dataset.unit===(m?m.unit:'g')));
+  const img=$('#material-preview');
+  if(m&&m.img){img.src=m.img;img.style.display='block';currentMaterialBlob=m.img;}else{img.style.display='none';}
+  $('#btn-del-material').style.display=id?'inline-flex':'none';
+  openM('modal-material');
+}
+$('#m-unit').addEventListener('click',e=>{if(e.target.tagName!=='BUTTON')return;$$('#m-unit button').forEach(b=>b.classList.remove('active'));e.target.classList.add('active');});
+const dzMat=$('#dropzone-material');
+dzMat.addEventListener('click',()=>$('#material-file').click());
+$('#material-file').addEventListener('change',async e=>{const f=e.target.files[0];if(f){const d=await readFile(f);currentMaterialBlob=d;const img=$('#material-preview');img.src=d;img.style.display='block';}});
+dzMat.addEventListener('dragover',e=>{e.preventDefault();dzMat.classList.add('over');});dzMat.addEventListener('dragleave',()=>dzMat.classList.remove('over'));
+dzMat.addEventListener('drop',async e=>{e.preventDefault();dzMat.classList.remove('over');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/')){const d=await readFile(f);currentMaterialBlob=d;const img=$('#material-preview');img.src=d;img.style.display='block';}});
+$('#btn-save-material').addEventListener('click',async ()=>{
+  const name=$('#m-name').value.trim();if(!name){toast('请填写线材名称');return;}
+  const unit=$('#m-unit button.active').dataset.unit;
+  const m={id:currentMaterialId||uid(),name,brand:$('#m-brand').value.trim(),color:$('#m-color').value.trim(),material:$('#m-material').value.trim(),unit,weight:$('#m-weight').value?parseFloat($('#m-weight').value):null,needle:$('#m-needle').value.trim(),price:$('#m-price').value?parseFloat($('#m-price').value):null,note:$('#m-note').value.trim(),img:currentMaterialBlob,created:currentMaterialId?(materials.find(x=>x.id===currentMaterialId).created):Date.now()};
+  if(currentMaterialId){await dbPut('materials',m);materials=materials.map(x=>x.id===m.id?m:x);}
+  else{await dbAdd('materials',m);materials.push(m);}
+  closeM('modal-material');renderMaterials();toast('线材已保存 ✓');
+});
+$('#btn-del-material').addEventListener('click',async ()=>{if(!currentMaterialId||!confirm('确定删除这条线材吗？'))return;await dbDel('materials',currentMaterialId);materials=materials.filter(x=>x.id!==currentMaterialId);closeM('modal-material');renderMaterials();toast('已删除');});
+
+/* ========== Material Picker (for project modal) ========== */
+function openMaterialPicker(){
+  $('#picker-search').value='';
+  renderPickerList('');
+  openM('modal-material-picker');
+  setTimeout(()=>$('#picker-search').focus(),100);
+}
+function renderPickerList(q){
+  const list=$('#picker-list');
+  let arr=materials;
+  if(q)arr=materials.filter(m=>(m.name+' '+(m.brand||'')+' '+(m.color||'')+' '+(m.material||'')).toLowerCase().includes(q.toLowerCase()));
+  if(arr.length===0){list.innerHTML=`<div class="empty" style="padding:30px;"><p>${materials.length===0?'线材库为空，请先到「线材管理」添加':'没有匹配的线材'}</p></div>`;return;}
+  list.innerHTML=arr.map(m=>`<div class="card" style="padding:12px;margin-bottom:8px;cursor:pointer;display:flex;gap:10px;align-items:center;" data-id="${m.id}">
+    ${m.img?`<img class="img-thumb" src="${m.img}" style="width:48px;height:48px;">`:`<div style="width:48px;height:48px;border-radius:var(--radius-sm);background:var(--bg-soft);display:flex;align-items:center;justify-content:center;color:var(--ink-mute);font-size:11px;">无线</div>`}
+    <div style="flex:1;min-width:0;">
+      <div style="font-weight:600;font-size:14px;">${m.name||'未命名'}</div>
+      <div style="font-size:12px;color:var(--ink-mute);">${[m.brand,m.color,m.material].filter(Boolean).join(' · ')||'—'}</div>
+    </div>
+    <span class="btn sm">选择</span>
+  </div>`).join('');
+  $$('#picker-list .card').forEach(c=>c.addEventListener('click',()=>{
+    const m=materials.find(x=>x.id===c.dataset.id);
+    if(m)addMaterialRow({name:m.name+(m.brand?' / '+m.brand:''),amount:m.weight?m.weight+(m.unit||'g'):''});
+    closeM('modal-material-picker');
+  }));
+}
+$('#picker-search').addEventListener('input',e=>renderPickerList(e.target.value));
+
+/* ========== Stats ========== */
+function renderStats(){
+  const doing=projects.filter(p=>p.status==='进行中').length,done=projects.filter(p=>p.status==='已完成').length,plan=projects.filter(p=>p.status==='计划中').length;
+  const totalSeconds=projects.reduce((s,p)=>s+(p.totalSeconds||0),0);
+  const materialCount=materials.length;
+  const materialCost=materials.reduce((s,m)=>s+(m.price||0),0);
+  const maxStatus=Math.max(plan,doing,done,1);
+  $('#stats-content').innerHTML=`<div style="max-width:680px;margin:0 auto;">
+    <h3 style="font-size:16px;margin:0 0 12px;">项目</h3>
+    <div class="grid" style="grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
+      <div class="card" style="padding:16px;text-align:center;"><div style="font-size:28px;font-weight:700;color:var(--accent);font-family:Georgia,serif;">${doing}</div><div style="font-size:12px;color:var(--ink-mute);">进行中</div></div>
+      <div class="card" style="padding:16px;text-align:center;"><div style="font-size:28px;font-weight:700;color:#5A8A5A;font-family:Georgia,serif;">${done}</div><div style="font-size:12px;color:var(--ink-mute);">已完成</div></div>
+      <div class="card" style="padding:16px;text-align:center;"><div style="font-size:28px;font-weight:700;color:var(--ink-soft);font-family:Georgia,serif;">${projects.length}</div><div style="font-size:12px;color:var(--ink-mute);">全部</div></div>
+    </div>
+    <div class="card" style="padding:18px;margin-bottom:20px;display:flex;align-items:center;gap:14px;">
+      <div style="width:42px;height:42px;border-radius:50%;background:#FFF3E0;display:flex;align-items:center;justify-content:center;font-size:20px;">⏱️</div>
+      <div><div style="font-size:13px;color:var(--ink-mute);">总计时</div><div style="font-size:22px;font-weight:700;color:#C97B4A;font-family:Georgia,serif;">${Math.round(totalSeconds/60)} 分钟</div></div>
+    </div>
+    <h3 style="font-size:16px;margin:0 0 12px;">线材</h3>
+    <div class="grid" style="grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px;">
+      <div class="card" style="padding:16px;text-align:center;"><div style="font-size:28px;font-weight:700;color:var(--accent);font-family:Georgia,serif;">${materialCount}</div><div style="font-size:12px;color:var(--ink-mute);">总线材</div></div>
+      <div class="card" style="padding:16px;text-align:center;"><div style="font-size:28px;font-weight:700;color:#9B7CB6;font-family:Georgia,serif;">${materialCost?materialCost.toFixed(2):'-'}</div><div style="font-size:12px;color:var(--ink-mute);">总花费</div></div>
+    </div>
+    <h3 style="font-size:16px;margin:0 0 12px;">项目成本与收益</h3>
+    <div class="grid" style="grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
+      <div class="card" style="padding:16px;text-align:center;"><div style="font-size:22px;font-weight:700;color:#C97B4A;font-family:Georgia,serif;">-</div><div style="font-size:12px;color:var(--ink-mute);">项目材料成本</div></div>
+      <div class="card" style="padding:16px;text-align:center;"><div style="font-size:22px;font-weight:700;color:#5A8A5A;font-family:Georgia,serif;">-</div><div style="font-size:12px;color:var(--ink-mute);">总收入</div></div>
+      <div class="card" style="padding:16px;text-align:center;"><div style="font-size:22px;font-weight:700;color:var(--accent);font-family:Georgia,serif;">-</div><div style="font-size:12px;color:var(--ink-mute);">利润</div></div>
+    </div>
+    <h3 style="font-size:16px;margin:0 0 12px;">项目状态分布</h3>
+    <div class="card" style="padding:18px;">
+      ${[['计划中',plan,'#9C9389'],['进行中',doing,'#3A8A8A'],['已完成',done,'#5A8A5A']].map(([label,count,color])=>`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="width:60px;font-size:13px;color:var(--ink-soft);">${label}</span><div class="progress-bar" style="flex:1;margin-top:0;height:10px;"><div style="width:${Math.round(count/maxStatus*100)}%;background:${color};"></div></div><span style="width:24px;text-align:right;font-size:13px;color:var(--ink-soft);">${count}</span></div>`).join('')}
+    </div>
+  </div>`;
+}
+
+/* ========== Export / Import ========== */
+function countImages(){
+  let n=0;
+  patterns.forEach(p=>{if(p.img)n++;});
+  works.forEach(w=>{if(w.img)n++;if(w.photos)n+=w.photos.length;});
+  projects.forEach(p=>{if(p.blueprint&&p.blueprint.img)n++;});
+  materials.forEach(m=>{if(m.img)n++;});
+  return n;
+}
+function roughSize(obj){
+  const s=JSON.stringify(obj);
+  return s.length>1024?(s.length/1024).toFixed(1)+' KB':s.length+' B';
+}
+function renderExport(){
+  const imgCount=countImages();
+  $('#export-summary').innerHTML=`项目 ${projects.length} 项 · 计数项目 ${counters.length} 个 · 作品 ${works.length} 件（图片 ${works.reduce((s,w)=>s+(w.photos?w.photos.length:0)+(w.img?1:0),0)} 张）<br>图样 ${patterns.length} 个 · 线材 ${materials.length} 种 · 图片总计 ${imgCount} 张 · 约 ${roughSize({projects,counters,patterns,works,materials})}`;
+}
+$('#btn-export-json').addEventListener('click',()=>{
+  const data={version:3,exportTime:Date.now(),projects,counters,patterns,works,materials};
+  const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`猫糕玩毛线-备份-${fmtDate(Date.now()).replace(/\./g,'-')}.json`;a.click();URL.revokeObjectURL(url);toast('备份已导出 ✓');
+});
+$('#btn-export-txt').addEventListener('click',()=>{
+  let txt=`猫糕玩毛线 · 数据清单\n导出时间：${fmtDate(Date.now())}\n${'='.repeat(30)}\n\n`;
+  txt+=`【项目】共 ${projects.length} 个\n`;
+  projects.forEach(p=>{txt+=`- ${p.name} [${p.status||'计划中'}] 针号:${p.needle||'-'} 目标:${p.target||'-'}行\n`;if(p.materials&&p.materials.length)p.materials.forEach(m=>txt+=`  · 线材：${m.name||''} ${m.amount||''}\n`);});
+  txt+=`\n【计数器】共 ${counters.length} 个\n`;
+  counters.forEach(c=>{txt+=`- ${c.name} 当前:${c.current||0} 目标:${c.target||'-'}\n`;if(c.note)txt+=`  笔记：${c.note}\n`;});
+  txt+=`\n【作品记录】共 ${works.length} 件\n`;
+  works.forEach(w=>{txt+=`- ${w.name} 完成:${fmtDate(w.date)} 线材:${w.yarn||'-'} 钩针:${w.hook||'-'}\n`;if(w.note)txt+=`  心得：${w.note}\n`;});
+  txt+=`\n【线材库存】共 ${materials.length} 种\n`;
+  materials.forEach(m=>{txt+=`- ${m.name} 品牌:${m.brand||'-'} 颜色:${m.color||'-'} 材质:${m.material||'-'} ${m.weight||'-'}${m.unit||'g'} 价格:${m.price||'-'}\n`;if(m.note)txt+=`  备注：${m.note}\n`;});
+  const blob=new Blob([txt],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`猫糕玩毛线-清单-${fmtDate(Date.now()).replace(/\./g,'-')}.txt`;a.click();URL.revokeObjectURL(url);toast('清单已导出 ✓');
+});
+$('#btn-import').addEventListener('click',()=>$('#import-file').click());
+$('#import-file').addEventListener('change',async e=>{
+  const f=e.target.files[0];if(!f)return;
+  if(!confirm('导入将覆盖当前所有数据，确定继续吗？')){e.target.value='';return;}
+  try{
+    const text=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsText(f);});
+    const data=JSON.parse(text);
+    if(!data.projects||!data.counters||!data.patterns||!data.works){throw new Error('备份文件格式不正确');}
+    // clear stores
+    for(const s of ['projects','counters','patterns','works','materials']){const all=await dbAll(s);for(const x of all)await dbDel(s,x.id);}
+    // import
+    projects=[];counters=[];patterns=[];works=[];materials=[];
+    for(const p of data.projects){await dbAdd('projects',p);projects.push(p);}
+    for(const c of data.counters){await dbAdd('counters',c);counters.push(c);}
+    for(const p of data.patterns){await dbAdd('patterns',p);patterns.push(p);}
+    for(const w of data.works){await dbAdd('works',w);works.push(w);}
+    for(const m of (data.materials||[])){await dbAdd('materials',m);materials.push(m);}
+    toast('数据已恢复 ✓');renderExport();switchView('projects');
+  }catch(err){console.error(err);toast('导入失败：'+err.message);}
+  e.target.value='';
+});
+
+/* ========== Init ========== */
+(async function init(){
+  try{await openDB();projects=await dbAll('projects');counters=await dbAll('counters');patterns=await dbAll('patterns');works=await dbAll('works');materials=await dbAll('materials');}
+  catch(e){console.error(e);toast('存储初始化失败，请使用支持 IndexedDB 的浏览器');return;}
+  updateTimerDisplay();renderProjects();
+})();
+</script>
+</body>
+</html>
