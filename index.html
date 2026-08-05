@@ -1084,8 +1084,43 @@ function openDB(){
     req.onerror=e=>rej(e.target.error);
   });
 }
-function dbAdd(s,v){return new Promise((res,rej)=>{const r=db.transaction(s,'readwrite').objectStore(s).add(v);r.onsuccess=()=>res(v);r.onerror=()=>rej(r.error);});}
-function dbPut(s,v){return new Promise((res,rej)=>{const r=db.transaction(s,'readwrite').objectStore(s).put(v);r.onsuccess=()=>res(v);r.onerror=()=>rej(r.error);});}
+function dbAdd(storeName, value) {
+  value._localUpdatedAt = Date.now();
+
+  return new Promise((resolve, reject) => {
+    const request = db
+      .transaction(storeName, "readwrite")
+      .objectStore(storeName)
+      .add(value);
+
+    request.onsuccess = () => {
+      resolve(value);
+    };
+
+    request.onerror = () => {
+      reject(request.error);
+    };
+  });
+}
+
+function dbPut(storeName, value) {
+  value._localUpdatedAt = Date.now();
+
+  return new Promise((resolve, reject) => {
+    const request = db
+      .transaction(storeName, "readwrite")
+      .objectStore(storeName)
+      .put(value);
+
+    request.onsuccess = () => {
+      resolve(value);
+    };
+
+    request.onerror = () => {
+      reject(request.error);
+    };
+  });
+}
 function dbDel(s,id){return new Promise((res,rej)=>{const r=db.transaction(s,'readwrite').objectStore(s).delete(id);r.onsuccess=()=>res();r.onerror=()=>rej(r.error);});}
 function dbAll(s){return new Promise((res,rej)=>{const r=db.transaction(s).objectStore(s).getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error);});}
 function dbGet(storeName, id) {
