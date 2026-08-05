@@ -825,6 +825,247 @@ return true;
   return false;}
   }
 
+  const CLOUD_STORE_NAMES = [
+  "projects",
+  "counters",
+  "patterns",
+  "works",
+  "materials"
+];
+
+function getLocalRecordTime(record) {
+  if (!record) return 0;
+
+  const possibleTimes = [
+    record._localUpdatedAt,
+    record.updated,
+    record.updatedAt,
+    record.modified,
+    record.created
+  ];
+
+  for (const value of possibleTimes) {
+    if (!value) continue;
+
+    const numericValue = Number(value);
+
+    if (
+      Number.isFinite(numericValue) &&
+      numericValue > 0
+    ) {
+      return numericValue;
+    }
+
+    const parsedValue = Date.parse(value);
+
+    if (Number.isFinite(parsedValue)) {
+      return parsedValue;
+    }
+  }
+
+  return 0;
+}
+
+async function reloadLocalDataArrays() {
+  projects = await dbAll("projects");
+  counters = await dbAll("counters");
+  patterns = await dbAll("patterns");
+  works = await dbAll("works");
+  materials = await dbAll("materials");
+}
+
+async function restoreCloudDataToLocal() {
+  if (!navigator.onLine) {
+    setSyncStatus("offline", "离线");
+    toast("当前没有网络，无法从云端恢复");
+    return false;
+  }
+
+  const confirmed = window.confirm(
+    "将从云端读取数据并与本机数据合并。\n\n" +
+    "本机独有的数据会保留；同一条记录将采用更新时间较新的版本。\n\n" +
+    "是否继续？"
+  );
+
+  if (!confirmed) return false;
+
+  setSyncStatus("syncing", "恢复中");
+
+  try {
+    const cloudRecords =
+      await fetchCloudRecords();
+
+    if (cloudRecords.length === 0) {
+      setSyncStatus(
+        "synced",
+        "云端暂无数据"
+      );
+
+      toast("云端目前没有可恢复的数据");
+      return true;
+    }
+
+    let addedCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
+    let deletedCount = 0;
+
+    for (const cloudRecord of cloudRecords) {
+      const storeName =
+        cloudRecord.store_name;
+
+      const recordId =
+        cloudRecord.record_id;
+
+      if (
+        !CLOUD_STORE_NAMES.includes(storeName)
+      ) {
+        skippedCount += 1;
+        continue;
+      }
+
+      if (!recordId) {
+        skippedCount += 1;
+        continue;
+      }
+
+      /*
+       * 云端删除标记：
+       * 如果该记录已在另一台设备同步删除，
+       * 则也从当前设备删除。
+       */
+      if (cloudRecord.deleted) {
+        const existing =
+          await dbGet(storeName, recordId);
+
+        if (existing) {
+          await dbDel(storeName, recordId);
+          deletedCount += 1;
+        }
+
+        continue;
+      }
+
+      if (
+        !cloudRecord.payload ||
+        typeof cloudRecord.payload !== "object"
+      ) {
+        skippedCount += 1;
+        continue;
+      }
+
+      const existing =
+        await dbGet(storeName, recordId);
+
+      const cloudTime =
+        Date.parse(cloudRecord.updated_at) || 0;
+
+      const localTime =
+        getLocalRecordTime(existing);
+
+      const restoredPayload = {
+        ...cloudRecord.payload,
+        id: cloudRecord.payload.id ?? recordId,
+        _cloudUpdatedAt: cloudTime
+      };
+
+      if (!existing) {
+        await dbPut(
+          storeName,
+          restoredPayload
+        );
+
+        addedCount += 1;
+        continue;
+      }
+
+      /*
+       * 同一 ID 的智能合并：
+       * 云端更新时间较新或本地无法判断时间时，
+       * 使用云端版本；否则保留本地版本。
+       */
+      if (
+        localTime === 0 ||
+        cloudTime >= localTime
+      ) {
+        await dbPut(
+          storeName,
+          restoredPayload
+        );
+
+        updatedCount += 1;
+      } else {
+        skippedCount += 1;
+      }
+    }
+
+    await reloadLocalDataArrays();
+
+    const restoreTime =
+      new Date().toLocaleTimeString(
+        "zh-CN",
+        {
+          hour: "2-digit",
+          minute: "2-digit"
+        }
+      );
+
+    localStorage.setItem(
+      "cat-yarn-last-sync-time",
+      Date.now().toString()
+    );
+
+    setSyncStatus(
+      "synced",
+      `已恢复 ${restoreTime}`
+    );
+
+    toast(
+      `恢复完成：新增 ${addedCount}，更新 ${updatedCount}，删除 ${deletedCount}，保留本机 ${skippedCount}`
+    );
+
+    console.log(
+      "Cloud restore completed:",
+      {
+        addedCount,
+        updatedCount,
+        deletedCount,
+        skippedCount
+      }
+    );
+
+    /*
+     * 重新加载页面，确保所有统计、
+     * 项目卡片、计数器和页面状态全部刷新。
+     */
+    window.setTimeout(() => {
+      window.location.reload();
+    }, 1200);
+
+    return true;
+
+  } catch (error) {
+    console.error(
+      "Cloud restore failed:",
+      error
+    );
+
+    setSyncStatus(
+      "offline",
+      navigator.onLine
+        ? "恢复失败"
+        : "离线"
+    );
+
+    toast(
+      "从云端恢复失败：" +
+      error.message
+    );
+
+    return false;
+  }
+}
+  
 /* ========== IndexedDB ========== */
 const DB_NAME='cat-yarn-workbench',DB_VER=3;
 let db;
@@ -847,7 +1088,23 @@ function dbAdd(s,v){return new Promise((res,rej)=>{const r=db.transaction(s,'rea
 function dbPut(s,v){return new Promise((res,rej)=>{const r=db.transaction(s,'readwrite').objectStore(s).put(v);r.onsuccess=()=>res(v);r.onerror=()=>rej(r.error);});}
 function dbDel(s,id){return new Promise((res,rej)=>{const r=db.transaction(s,'readwrite').objectStore(s).delete(id);r.onsuccess=()=>res();r.onerror=()=>rej(r.error);});}
 function dbAll(s){return new Promise((res,rej)=>{const r=db.transaction(s).objectStore(s).getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error);});}
+function dbGet(storeName, id) {
+  return new Promise((resolve, reject) => {
+    const request = db
+      .transaction(storeName, "readonly")
+      .objectStore(storeName)
+      .get(id);
 
+    request.onsuccess = () => {
+      resolve(request.result || null);
+    };
+
+    request.onerror = () => {
+      reject(request.error);
+    };
+  });
+}
+  
 /* ========== Utils ========== */
 const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
