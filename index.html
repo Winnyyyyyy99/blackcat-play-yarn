@@ -1751,6 +1751,30 @@ $('#import-file').addEventListener('change',async e=>{
   const syncNowButton =
   document.getElementById("btn-sync-now");
 
+  const cloudRestoreButton =
+  document.getElementById(
+    "btn-cloud-restore"
+  );
+
+if (cloudRestoreButton) {
+  cloudRestoreButton.addEventListener(
+    "click",
+    async () => {
+      cloudRestoreButton.disabled = true;
+      cloudRestoreButton.textContent =
+        "恢复中…";
+
+      try {
+        await restoreCloudDataToLocal();
+      } finally {
+        cloudRestoreButton.disabled = false;
+        cloudRestoreButton.textContent =
+          "☁️ 从云端恢复";
+      }
+    }
+  );
+}
+
 if (syncNowButton) {
   syncNowButton.addEventListener(
     "click",
