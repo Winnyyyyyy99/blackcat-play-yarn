@@ -1019,18 +1019,28 @@ async function sendCloudRecords(records) {
   });
 }
 
-function makeCloudRecord(storeName, item) {
-  const recordId = String(item.id);
+function makeCloudRecord(
+  storeName,
+  item
+) {
+  const recordId =
+    String(item.id);
 
   let cloudPayload = item;
 
-  if (storeName === "patterns") {
+  if (
+    storeName === "patterns"
+  ) {
     const {
       img,
+      photos,
+      imageData,
+      dataUrl,
       ...patternWithoutBase64
     } = item;
 
-    cloudPayload = patternWithoutBase64;
+    cloudPayload =
+      patternWithoutBase64;
   }
 
   return {
