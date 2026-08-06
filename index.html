@@ -1696,7 +1696,13 @@ function addToday(n){const k=todayKey();localStorage.setItem(k,String(getToday()
 /* ========== State ========== */
 let projects=[],counters=[],patterns=[],works=[],materials=[],designs=[];
 let currentProjectId=null,currentCounterId=null,currentPatternId=null,currentWorkId=null,currentMaterialId=null;
-let currentBlueprintBlob=null,currentWorkBlob=null,currentWorkPhotos=[],currentMaterialBlob=null;
+let currentBlueprintBlob = null;
+let currentBlueprintPath = null;
+
+let currentPatternBlob = null;
+let currentWorkBlob = null;
+let currentWorkPhotos = [];
+let currentMaterialBlob = null;
 let currentPatternPhotos=[];
 
 /* ========== Nav ========== */
