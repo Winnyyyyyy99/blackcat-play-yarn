@@ -725,6 +725,179 @@ function setSyncStatus(status, message) {
   }
 }
 
+  function loadImageFromDataUrl(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("无法读取图片"));
+
+    image.src = dataUrl;
+  });
+}
+
+async function optimizePatternImage(dataUrl) {
+  const image = await loadImageFromDataUrl(dataUrl);
+
+  let maxDimension = 1800;
+  let quality = 0.82;
+  let lastBlob = null;
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const scale = Math.min(
+      1,
+      maxDimension /
+        Math.max(image.naturalWidth, image.naturalHeight)
+    );
+
+    const width = Math.max(
+      1,
+      Math.round(image.naturalWidth * scale)
+    );
+
+    const height = Math.max(
+      1,
+      Math.round(image.naturalHeight * scale)
+    );
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext("2d");
+    context.drawImage(image, 0, 0, width, height);
+
+    lastBlob = await new Promise(resolve => {
+      canvas.toBlob(
+        resolve,
+        "image/webp",
+        quality
+      );
+    });
+
+    if (!lastBlob) {
+      throw new Error("图片压缩失败");
+    }
+
+    if (lastBlob.size <= 4 * 1024 * 1024) {
+      return lastBlob;
+    }
+
+    maxDimension = Math.round(maxDimension * 0.8);
+    quality = Math.max(0.55, quality - 0.08);
+  }
+
+  return lastBlob;
+}
+
+async function uploadCloudImage(path, blob) {
+  const token = ensureSyncToken();
+
+  const response = await fetch(
+    `${SYNC_API_URL}/files`,
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": blob.type || "image/webp",
+        "X-File-Path": path
+      },
+      body: blob
+    }
+  );
+
+  const result = await response
+    .json()
+    .catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(
+      result?.error ||
+      `图片上传失败：${response.status}`
+    );
+  }
+
+  return result.path;
+}
+
+  async function migratePatternImagesToStorage() {
+  const legacyPatterns = patterns.filter(
+    pattern =>
+      pattern.img &&
+      pattern.img.startsWith("data:image/") &&
+      !pattern.imgPath
+  );
+
+  if (legacyPatterns.length === 0) {
+    return {
+      migrated: 0,
+      failed: 0
+    };
+  }
+
+  let migrated = 0;
+  let failed = 0;
+
+  for (
+    let i = 0;
+    i < legacyPatterns.length;
+    i += 1
+  ) {
+    const pattern = legacyPatterns[i];
+
+    setSyncStatus(
+      "syncing",
+      `迁移图片 ${i + 1}/${legacyPatterns.length}`
+    );
+
+    try {
+      const optimizedBlob =
+        await optimizePatternImage(pattern.img);
+
+      const imagePath =
+        `patterns/${pattern.id}.webp`;
+
+      await uploadCloudImage(
+        imagePath,
+        optimizedBlob
+      );
+
+      const updatedPattern = {
+        ...pattern,
+        imgPath: imagePath,
+        imageType: optimizedBlob.type,
+        imageSize: optimizedBlob.size
+      };
+
+      await dbPut(
+        "patterns",
+        updatedPattern
+      );
+
+      patterns = patterns.map(item =>
+        item.id === updatedPattern.id
+          ? updatedPattern
+          : item
+      );
+
+      migrated += 1;
+
+    } catch (error) {
+      failed += 1;
+
+      console.error(
+        `花样图片迁移失败：${pattern.name}`,
+        error
+      );
+    }
+  }
+
+  return {
+    migrated,
+    failed
+  };
+}
+  
 async function fetchCloudRecords() {
   const result = await syncApi(
     "/records",
