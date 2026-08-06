@@ -1882,16 +1882,66 @@ $('#btn-save-counter').addEventListener('click',async ()=>{
 });
 
 /* ========== Patterns ========== */
+async function hydratePatternImages() {
+  const images =
+    document.querySelectorAll(
+      ".pattern-cloud-image"
+    );
+
+  for (const image of images) {
+    if (image.getAttribute("src")) {
+      continue;
+    }
+
+    const path =
+      image.dataset.cloudPath;
+
+    if (!path) {
+      continue;
+    }
+
+    try {
+      image.src =
+        await getCloudImageUrl(path);
+    } catch (error) {
+      console.error(
+        "花样图片加载失败：",
+        path,
+        error
+      );
+    }
+  }
+}
 function renderPatterns(){
   const grid=$('#pattern-grid');
   if(patterns.length===0){grid.innerHTML=`<div class="empty"><svg viewBox="0 0 120 120" fill="none"><path d="M60 20 L80 40 L80 80 L60 100 L40 80 L40 40 Z" stroke="var(--line)" stroke-width="3"/><circle cx="60" cy="60" r="15" stroke="var(--line)" stroke-width="3"/></svg><p>还没有花样，点击「上传图样」开始收藏吧</p></div>`;return;}
   grid.innerHTML=`<div class="grid">`+patterns.sort((a,b)=>b.created-a.created).map(p=>patternCard(p)).join('')+`</div>`;
-  $$('.pattern-card').forEach(c=>c.addEventListener('click',()=>showPatternDetail(c.dataset.id)));
+  $$('.pattern-card').forEach(
+  c => c.addEventListener(
+    'click',
+    () => showPatternDetail(c.dataset.id)
+  )
+);
+
+hydratePatternImages();
 }
 function patternCard(p){
-  const cover=(p.photos&&p.photos.length)?p.photos[0]:(p.img||'');
+  const cover =
+  (p.photos && p.photos.length)
+    ? p.photos[0]
+    : (p.img || '');
+  const cloudCoverPath =
+  (p.photoPaths && p.photoPaths.length)
+    ? p.photoPaths[0]
+    : p.imgPath;
   return `<div class="card pattern-card" style="cursor:pointer;overflow:hidden;position:relative;" data-id="${p.id}">
-    <img class="thumb" src="${cover}" style="width:100%;aspect-ratio:1;object-fit:cover;background:var(--bg);" loading="lazy">
+    <img
+      class="thumb pattern-cloud-image"
+      src="${cover}"
+      data-pattern-id="${p.id}"
+      data-cloud-path="${cloudCoverPath || ''}"
+      style="width:100%;aspect-ratio:1;object-fit:cover;background:var(--bg);"
+    >
     ${(p.photos&&p.photos.length>1)?`<span style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;padding:2px 7px;border-radius:10px;">${p.photos.length} 图</span>`:''}
     <div style="padding:12px;">
       <div style="font-weight:600;font-size:14px;margin-bottom:4px;">${p.name||'未命名'}</div>
