@@ -992,6 +992,100 @@ async function uploadCloudImage(path, blob) {
   };
 }
   
+async function migrateProjectImagesToStorage() {
+  let migrated = 0;
+  let failed = 0;
+
+  for (
+    let index = 0;
+    index < projects.length;
+    index += 1
+  ) {
+    const project =
+      projects[index];
+
+    const blueprint =
+      project.blueprint || {};
+
+    if (
+      !blueprint.img ||
+      typeof blueprint.img !==
+        'string' ||
+      !blueprint.img.startsWith(
+        'data:image/'
+      ) ||
+      blueprint.imgPath
+    ) {
+      continue;
+    }
+
+    setSyncStatus(
+      'syncing',
+      `迁移项目图片 ${index + 1}/${projects.length}`
+    );
+
+    try {
+      const optimizedBlob =
+        await optimizePatternImage(
+          blueprint.img
+        );
+
+      const imagePath =
+        `projects/${project.id}/blueprint.webp`;
+
+      await uploadCloudImage(
+        imagePath,
+        optimizedBlob
+      );
+
+      const updatedProject = {
+        ...project,
+
+        blueprint: {
+          ...blueprint,
+
+          imgPath:
+            imagePath,
+
+          imageType:
+            optimizedBlob.type,
+
+          imageSize:
+            optimizedBlob.size
+        }
+      };
+
+      await dbPut(
+        'projects',
+        updatedProject
+      );
+
+      projects =
+        projects.map(item =>
+          item.id ===
+          updatedProject.id
+            ? updatedProject
+            : item
+        );
+
+      migrated += 1;
+
+    } catch (error) {
+      failed += 1;
+
+      console.error(
+        `项目图纸迁移失败：${project.name}`,
+        error
+      );
+    }
+  }
+
+  return {
+    migrated,
+    failed
+  };
+}
+
 async function fetchCloudRecords() {
   const result = await syncApi(
     "/records",
@@ -1042,6 +1136,25 @@ function makeCloudRecord(
     cloudPayload =
       patternWithoutBase64;
   }
+
+if (
+  storeName === 'projects'
+) {
+  const blueprint =
+    item.blueprint || {};
+
+  const {
+    img,
+    ...blueprintWithoutBase64
+  } = blueprint;
+
+  cloudPayload = {
+    ...item,
+
+    blueprint:
+      blueprintWithoutBase64
+  };
+}
 
   return {
     record_key:
@@ -1127,7 +1240,18 @@ if (migrationResult.failed > 0) {
     `有 ${migrationResult.failed} 张图片迁移失败`
   );
 }
-    
+   
+const projectMigrationResult =
+  await migrateProjectImagesToStorage();
+
+if (
+  projectMigrationResult.failed > 0
+) {
+  toast(
+    `有 ${projectMigrationResult.failed} 张项目图纸迁移失败`
+  );
+}
+
   const normalRecords = cloudRecords.filter(
     record => record.store_name !== "patterns"
   );
@@ -1735,6 +1859,41 @@ $$('[data-close]').forEach(el=>el.addEventListener('click',()=>el.closest('.moda
 $$('.modal-mask').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');}));
 
 /* ========== Projects ========== */
+async function hydrateProjectImages() {
+  const images =
+    document.querySelectorAll(
+      '.project-cloud-image'
+    );
+
+  for (const image of images) {
+    if (
+      image.getAttribute('src')
+    ) {
+      continue;
+    }
+
+    const path =
+      image.dataset.cloudPath;
+
+    if (!path) {
+      continue;
+    }
+
+    try {
+      image.src =
+        await getCloudImageUrl(
+          path
+        );
+
+    } catch (error) {
+      console.error(
+        '项目图片加载失败：',
+        image.dataset.projectId,
+        error
+      );
+    }
+  }
+}
 function renderProjects(){
   const total=projects.length,doing=projects.filter(p=>p.status==='进行中').length,done=projects.filter(p=>p.status==='已完成').length;
   $('#project-stats').innerHTML=`<div class="card stat"><div class="num">${total}</div><div class="lbl">项目总数</div></div><div class="card stat"><div class="num">${doing}</div><div class="lbl">进行中</div></div><div class="card stat"><div class="num">${done}</div><div class="lbl">已完成</div></div>`;
@@ -1754,8 +1913,23 @@ function renderProjects(){
           ${p.needle?`<span class="tag-pill outline">${p.needle}</span>`:''}
         </div>
         <div style="display:flex;gap:8px;align-items:flex-start;">
-          ${p.blueprint&&p.blueprint.img?`<img class="img-thumb" src="${p.blueprint.img}">`:''}
-          <button class="btn sm btn-project-detail" data-id="${p.id}" title="进入计数器" style="border-radius:50%;width:34px;height:34px;padding:0;display:flex;align-items:center;justify-content:center;font-size:18px;">＋</button>
+        ${
+         p.blueprint &&
+          (
+           p.blueprint.img ||
+           p.blueprint.imgPath
+         )
+           ? `
+              <img
+                class="img-thumb project-cloud-image"
+               src="${p.blueprint.img || ''}"
+               data-cloud-path="${p.blueprint.imgPath || ''}"
+               data-project-id="${p.id}"
+              >
+           `
+           : ''
+        }          
+           <button class="btn sm btn-project-detail" data-id="${p.id}" title="进入计数器" style="border-radius:50%;width:34px;height:34px;padding:0;display:flex;align-items:center;justify-content:center;font-size:18px;">＋</button>
         </div>
       </div>
       ${p.target?`<div style="margin-top:10px;"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);"><span>进度 ${cur}/${p.target} 行</span><span>${pct}%</span></div><div class="progress-bar"><div style="width:${pct}%;"></div></div></div>`:''}
@@ -1767,6 +1941,7 @@ function renderProjects(){
   }).join('')+`</div>`;
   $$('#project-list .card').forEach(c=>c.addEventListener('click',()=>openProjectModal(c.dataset.id)));
   $$('.btn-project-detail').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();openProjectDetail(b.dataset.id);}));
+  hydrateProjectImages();
 }
 function openProjectModal(id){
   currentProjectId=id||null;currentBlueprintBlob=null;
@@ -1778,8 +1953,40 @@ function openProjectModal(id){
   $('#pr-desc').value=p?p.desc:'';
   $('#pr-blueprint-note').value=p&&p.blueprint?p.blueprint.note:'';
   $('#pr-target').value=p?p.target:'';
-  const bp=$('#blueprint-preview');bp.style.display='none';
-  if(p&&p.blueprint&&p.blueprint.img){bp.src=p.blueprint.img;bp.style.display='block';currentBlueprintBlob=p.blueprint.img;}
+  const bp = $('#blueprint-preview');
+
+  bp.style.display = 'none';
+  bp.removeAttribute('src');
+
+  currentBlueprintBlob = null;
+  currentBlueprintPath =
+    p?.blueprint?.imgPath || null;
+
+  if (p?.blueprint?.img) {
+    currentBlueprintBlob =
+     p.blueprint.img;
+
+    bp.src =
+     p.blueprint.img;
+
+   bp.style.display =
+     'block';
+
+  } else if (currentBlueprintPath) {
+    getCloudImageUrl(
+     currentBlueprintPath
+   )
+     .then(url => {
+        bp.src = url;
+        bp.style.display = 'block';
+     })
+     .catch(error => {
+       console.error(
+          '项目图纸读取失败：',
+         error
+       );
+     });
+  }
   const ml=$('#materials-list');ml.innerHTML='';
   const mats=p&&p.materials?p.materials:[];if(mats.length===0) addMaterialRow(); else mats.forEach(m=>addMaterialRow(m));
   const ll=$('#links-list');ll.innerHTML='';
@@ -1810,23 +2017,98 @@ function getBlueprintLinks(p){
 $('#btn-pick-material').addEventListener('click',()=>openMaterialPicker());
 const dzBp=$('#dropzone-blueprint');
 dzBp.addEventListener('click',()=>$('#blueprint-file').click());
-$('#blueprint-file').addEventListener('change',async e=>{const f=e.target.files[0];if(f){const d=await readFile(f);currentBlueprintBlob=d;const img=$('#blueprint-preview');img.src=d;img.style.display='block';}});
+$('#blueprint-file').addEventListener('change',async e=>{const f=e.target.files[0];if(f){const d=await readFile(f);currentBlueprintBlob=d;currentBlueprintPath = null;const img=$('#blueprint-preview');img.src=d;img.style.display='block';}});
 dzBp.addEventListener('dragover',e=>{e.preventDefault();dzBp.classList.add('over');});
 dzBp.addEventListener('dragleave',()=>dzBp.classList.remove('over'));
-dzBp.addEventListener('drop',async e=>{e.preventDefault();dzBp.classList.remove('over');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/')){const d=await readFile(f);currentBlueprintBlob=d;const img=$('#blueprint-preview');img.src=d;img.style.display='block';}});
-document.addEventListener('paste',async e=>{if(!$('#modal-project').classList.contains('show'))return;const items=e.clipboardData&&e.clipboardData.items?Array.from(e.clipboardData.items):[];for(const it of items){if(it.type.startsWith('image/')){const f=it.getAsFile();if(f){const d=await readFile(f);currentBlueprintBlob=d;const img=$('#blueprint-preview');img.src=d;img.style.display='block';break;}}}});
+dzBp.addEventListener('drop',async e=>{e.preventDefault();dzBp.classList.remove('over');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/')){const d=await readFile(f);currentBlueprintBlob=d;currentBlueprintPath = null;const img=$('#blueprint-preview');img.src=d;img.style.display='block';}});
+document.addEventListener('paste',async e=>{if(!$('#modal-project').classList.contains('show'))return;const items=e.clipboardData&&e.clipboardData.items?Array.from(e.clipboardData.items):[];for(const it of items){if(it.type.startsWith('image/')){const f=it.getAsFile();if(f){const d=await readFile(f);currentBlueprintBlob=d;currentBlueprintPath = null;const img=$('#blueprint-preview');img.src=d;img.style.display='block';break;}}}});
 $('#btn-save-project').addEventListener('click',async ()=>{
   const name=$('#pr-name').value.trim();if(!name){toast('请填写项目名称');return;}
   const mats=[];$$('#materials-list .material-row').forEach(r=>{const n=r.querySelector('.m-name').value.trim(),a=r.querySelector('.m-amount').value.trim();if(n||a)mats.push({name:n,amount:a});});
   const links=[];$$('#links-list .link-input').forEach(i=>{const v=i.value.trim();if(v)links.push(v);});
   const oldP=currentProjectId?projects.find(x=>x.id===currentProjectId):null;
-  const p={id:currentProjectId||uid(),name,status:$('#pr-status').value,needle:$('#pr-needle').value.trim(),desc:$('#pr-desc').value.trim(),materials:mats,blueprint:{img:currentBlueprintBlob||null,links:links,link:links[0]||'',note:$('#pr-blueprint-note').value.trim()},target:$('#pr-target').value?parseInt($('#pr-target').value,10):null,totalSeconds:oldP?(oldP.totalSeconds||0):0,created:currentProjectId?(oldP.created):Date.now(),updated:Date.now()};
+  const p={id:currentProjectId||uid(),name,status:$('#pr-status').value,needle:$('#pr-needle').value.trim(),desc:$('#pr-desc').value.trim(),materials:mats,blueprint: {
+  img:
+    currentBlueprintBlob ||
+    null,
+
+  imgPath:
+    currentBlueprintPath ||
+    null,
+
+  links:
+    links,
+
+  link:
+    links[0] || '',
+
+  note:
+    $('#pr-blueprint-note')
+      .value
+      .trim()
+}
+,target:$('#pr-target').value?parseInt($('#pr-target').value,10):null,totalSeconds:oldP?(oldP.totalSeconds||0):0,created:currentProjectId?(oldP.created):Date.now(),updated:Date.now()};
   if(currentProjectId){await dbPut('projects',p);projects=projects.map(x=>x.id===p.id?p:x);}
   else{await dbAdd('projects',p);projects.push(p);}
   closeM('modal-project');renderProjects();toast('项目已保存 ✓');
 });
-$('#btn-del-project').addEventListener('click',async ()=>{if(!currentProjectId||!confirm('确定删除这个项目吗？关联的计数器将不再统计其进度。'))return;await dbDel('projects',currentProjectId);projects=projects.filter(x=>x.id!==currentProjectId);closeM('modal-project');renderProjects();toast('已删除');});
+$('#btn-del-project').addEventListener(
+  'click',
+  async () => {
+    if (
+      !currentProjectId ||
+      !confirm(
+        '确定删除这个项目吗？云端图纸也会在下次同步时清理。'
+      )
+    ) {
+      return;
+    }
 
+    const project =
+      projects.find(
+        item =>
+          item.id ===
+          currentProjectId
+      );
+
+    if (!project) {
+      return;
+    }
+
+    const cloudPaths = [
+      project.blueprint
+        ?.imgPath
+    ].filter(Boolean);
+
+    queueCloudDeletion(
+      'projects',
+      project.id,
+      cloudPaths
+    );
+
+    await dbDel(
+      'projects',
+      project.id
+    );
+
+    projects =
+      projects.filter(
+        item =>
+          item.id !==
+          project.id
+      );
+
+    closeM(
+      'modal-project'
+    );
+
+    renderProjects();
+
+    toast(
+      '已删除，点击立即同步完成云端清理'
+    );
+  }
+);
 /* ========== Project Detail Counter ========== */
 let activeProjectId=null,activeCounterId=null,projectTimerInterval=null,projectTimerElapsed=0,projectTimerRunning=false;
 async function openProjectDetail(id){
