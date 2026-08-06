@@ -984,6 +984,15 @@ async function uploadAllLocalDataToCloud() {
   try {
   setSyncStatus("syncing", "同步中");
 
+    const migrationResult =
+  await migratePatternImagesToStorage();
+
+if (migrationResult.failed > 0) {
+  toast(
+    `有 ${migrationResult.failed} 张图片迁移失败`
+  );
+}
+    
   const normalRecords = cloudRecords.filter(
     record => record.store_name !== "patterns"
   );
