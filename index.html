@@ -2445,7 +2445,73 @@ async function copyPatternLink(p,idx){
     document.body.removeChild(ta);
   }
 }
-$('#btn-del-pattern').addEventListener('click',async ()=>{if(!currentPatternId||!confirm('确定删除这个图样吗？'))return;await dbDel('patterns',currentPatternId);patterns=patterns.filter(x=>x.id!==currentPatternId);closeM('modal-pattern-detail');renderPatterns();toast('已删除');});
+$('#btn-del-pattern').addEventListener(
+  'click',
+  async () => {
+    if (
+      !currentPatternId ||
+      !confirm(
+        '确定删除这个图样吗？云端图片也会在下次同步时清理。'
+      )
+    ) {
+      return;
+    }
+
+    const pattern =
+      patterns.find(
+        item =>
+          item.id === currentPatternId
+      );
+
+    if (!pattern) {
+      return;
+    }
+
+    const cloudPaths = [
+      pattern.imgPath,
+      ...(
+        Array.isArray(pattern.photoPaths)
+          ? pattern.photoPaths
+          : []
+      )
+    ].filter(Boolean);
+
+    /*
+     * 先加入待删除队列。
+     */
+    queueCloudDeletion(
+      "patterns",
+      pattern.id,
+      cloudPaths
+    );
+
+    /*
+     * 再删除本机数据。
+     */
+    await dbDel(
+      "patterns",
+      pattern.id
+    );
+
+    patterns =
+      patterns.filter(
+        item =>
+          item.id !== pattern.id
+      );
+
+    closeM(
+      "modal-pattern-detail"
+    );
+
+    renderPatterns();
+
+    toast(
+      navigator.onLine
+        ? "已删除，点击立即同步完成云端清理"
+        : "已删除，联网后点击立即同步清理云端"
+    );
+  }
+);
 $('#btn-edit-pattern').addEventListener('click',()=>{if(!currentPatternId)return;const id=currentPatternId;closeM('modal-pattern-detail');openPatternModal(id);});
 
 /* ========== Designs (图解设计 - 跳转织码手作) ========== */
