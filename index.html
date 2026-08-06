@@ -928,16 +928,38 @@ async function sendCloudRecords(records) {
 function makeCloudRecord(storeName, item) {
   const recordId = String(item.id);
 
+  let cloudPayload = item;
+
+  if (storeName === "patterns") {
+    const {
+      img,
+      ...patternWithoutBase64
+    } = item;
+
+    cloudPayload = patternWithoutBase64;
+  }
+
   return {
-    record_key: `${storeName}:${recordId}`,
-    store_name: storeName,
-    record_id: recordId,
-    payload: item,
-    updated_at: new Date(
-      getLocalRecordTime(item) ||
-      Date.now()
-    ).toISOString(),
-    deleted: false
+    record_key:
+      `${storeName}:${recordId}`,
+
+    store_name:
+      storeName,
+
+    record_id:
+      recordId,
+
+    payload:
+      cloudPayload,
+
+    updated_at:
+      new Date(
+        getLocalRecordTime(item) ||
+        Date.now()
+      ).toISOString(),
+
+    deleted:
+      false
   };
 }
 
