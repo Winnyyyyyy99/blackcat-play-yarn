@@ -821,80 +821,174 @@ async function uploadCloudImage(path, blob) {
 }
 
   async function migratePatternImagesToStorage() {
-  const legacyPatterns = patterns.filter(
-    pattern =>
-      pattern.img &&
-      pattern.img.startsWith("data:image/") &&
-      !pattern.imgPath
-  );
-
-  if (legacyPatterns.length === 0) {
-    return {
-      migrated: 0,
-      failed: 0
-    };
-  }
-
-  let migrated = 0;
-  let failed = 0;
+  let migratedPatterns = 0;
+  let migratedImages = 0;
+  let failedImages = 0;
 
   for (
-    let i = 0;
-    i < legacyPatterns.length;
-    i += 1
+    let patternIndex = 0;
+    patternIndex < patterns.length;
+    patternIndex += 1
   ) {
-    const pattern = legacyPatterns[i];
+    const pattern = patterns[patternIndex];
+
+    let changed = false;
+    let updatedPattern = {
+      ...pattern
+    };
 
     setSyncStatus(
       "syncing",
-      `迁移图片 ${i + 1}/${legacyPatterns.length}`
+      `检查花样 ${patternIndex + 1}/${patterns.length}`
     );
 
-    try {
-      const optimizedBlob =
-        await optimizePatternImage(pattern.img);
+    /*
+     * 迁移花样封面 img
+     */
+    if (
+      pattern.img &&
+      pattern.img.startsWith("data:image/") &&
+      !pattern.imgPath
+    ) {
+      try {
+        const optimizedBlob =
+          await optimizePatternImage(
+            pattern.img
+          );
 
-      const imagePath =
-        `patterns/${pattern.id}.webp`;
+        const imagePath =
+          `patterns/${pattern.id}/cover.webp`;
 
-      await uploadCloudImage(
-        imagePath,
-        optimizedBlob
-      );
+        await uploadCloudImage(
+          imagePath,
+          optimizedBlob
+        );
 
-      const updatedPattern = {
-        ...pattern,
-        imgPath: imagePath,
-        imageType: optimizedBlob.type,
-        imageSize: optimizedBlob.size
-      };
+        updatedPattern.imgPath =
+          imagePath;
 
+        updatedPattern.imageType =
+          optimizedBlob.type;
+
+        updatedPattern.imageSize =
+          optimizedBlob.size;
+
+        changed = true;
+        migratedImages += 1;
+
+      } catch (error) {
+        failedImages += 1;
+
+        console.error(
+          `封面迁移失败：${pattern.name}`,
+          error
+        );
+      }
+    }
+
+    /*
+     * 迁移 photos 数组里的所有 Base64 图片
+     */
+    const originalPhotos =
+      Array.isArray(pattern.photos)
+        ? pattern.photos
+        : [];
+
+    const existingPhotoPaths =
+      Array.isArray(pattern.photoPaths)
+        ? [...pattern.photoPaths]
+        : [];
+
+    if (originalPhotos.length > 0) {
+      const newPhotoPaths =
+        [...existingPhotoPaths];
+
+      for (
+        let photoIndex = 0;
+        photoIndex < originalPhotos.length;
+        photoIndex += 1
+      ) {
+        const photo =
+          originalPhotos[photoIndex];
+
+        /*
+         * 已经迁移过该位置时跳过
+         */
+        if (newPhotoPaths[photoIndex]) {
+          continue;
+        }
+
+        if (
+          typeof photo !== "string" ||
+          !photo.startsWith("data:image/")
+        ) {
+          continue;
+        }
+
+        setSyncStatus(
+          "syncing",
+          `迁移图片 ${patternIndex + 1}/${patterns.length} · ${photoIndex + 1}/${originalPhotos.length}`
+        );
+
+        try {
+          const optimizedBlob =
+            await optimizePatternImage(
+              photo
+            );
+
+          const photoPath =
+            `patterns/${pattern.id}/photo-${photoIndex + 1}.webp`;
+
+          await uploadCloudImage(
+            photoPath,
+            optimizedBlob
+          );
+
+          newPhotoPaths[photoIndex] =
+            photoPath;
+
+          changed = true;
+          migratedImages += 1;
+
+        } catch (error) {
+          failedImages += 1;
+
+          console.error(
+            `附图迁移失败：${pattern.name} 第 ${photoIndex + 1} 张`,
+            error
+          );
+        }
+      }
+
+      updatedPattern.photoPaths =
+        newPhotoPaths.filter(Boolean);
+    }
+
+    if (changed) {
+      /*
+       * 暂时保留本机 img 和 photos，
+       * 确认云端恢复成功后再清理。
+       */
       await dbPut(
         "patterns",
         updatedPattern
       );
 
-      patterns = patterns.map(item =>
-        item.id === updatedPattern.id
-          ? updatedPattern
-          : item
-      );
+      patterns =
+        patterns.map(item =>
+          item.id === updatedPattern.id
+            ? updatedPattern
+            : item
+        );
 
-      migrated += 1;
-
-    } catch (error) {
-      failed += 1;
-
-      console.error(
-        `花样图片迁移失败：${pattern.name}`,
-        error
-      );
+      migratedPatterns += 1;
     }
   }
 
   return {
-    migrated,
-    failed
+    migrated: migratedPatterns,
+    migratedImages,
+    failed: failedImages
   };
 }
   
