@@ -811,20 +811,45 @@ async function uploadAllLocalDataToCloud() {
   try {
   setSyncStatus("syncing", "同步中");
 
+  const normalRecords = cloudRecords.filter(
+    record => record.store_name !== "patterns"
+  );
+
+  const patternRecords = cloudRecords.filter(
+    record => record.store_name === "patterns"
+  );
+
+  /* 普通数据每批 50 条 */
   const batchSize = 50;
 
-    for (
-      let i = 0;
-      i < cloudRecords.length;
-      i += batchSize
-    ) {
-      const batch = cloudRecords.slice(
-        i,
-        i + batchSize
-      );
+  for (
+    let i = 0;
+    i < normalRecords.length;
+    i += batchSize
+  ) {
+    const batch = normalRecords.slice(
+      i,
+      i + batchSize
+    );
 
-      await sendCloudRecords(batch);
-    }
+    await sendCloudRecords(batch);
+  }
+
+  /* 花样图片数据逐条上传，避免请求过大 */
+  for (
+    let i = 0;
+    i < patternRecords.length;
+    i += 1
+  ) {
+    setSyncStatus(
+      "syncing",
+      `上传花样 ${i + 1}/${patternRecords.length}`
+    );
+
+  await sendCloudRecords([
+    patternRecords[i]
+  ]);
+}
 
     const syncTime =
   new Date().toLocaleTimeString(
