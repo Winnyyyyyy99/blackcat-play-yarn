@@ -2359,6 +2359,7 @@ function doSearchPattern(){
     if(filtered.length===0){grid.innerHTML=`<div class="empty"><p>没有找到单组 ${num} 针的花样</p></div>`;return;}
     grid.innerHTML=`<div class="grid">`+filtered.sort((a,b)=>b.created-a.created).map(p=>patternCard(p)).join('')+`</div>`;
     $$('.pattern-card').forEach(c=>c.addEventListener('click',()=>showPatternDetail(c.dataset.id)));
+    hydratePatternImages();
     return;
   }else if(type==='cat'){
     const q=n.toLowerCase();
@@ -2368,6 +2369,7 @@ function doSearchPattern(){
     if(filtered.length===0){grid.innerHTML=`<div class="empty"><p>没有找到${label}的花样</p></div>`;return;}
     grid.innerHTML=`<div class="grid">`+filtered.sort((a,b)=>b.created-a.created).map(p=>patternCard(p)).join('')+`</div>`;
     $$('.pattern-card').forEach(c=>c.addEventListener('click',()=>showPatternDetail(c.dataset.id)));
+    hydratePatternImages();
     return;
   }else{ // name
     const q=n.toLowerCase();
@@ -2376,6 +2378,7 @@ function doSearchPattern(){
     if(filtered.length===0){grid.innerHTML=`<div class="empty"><p>没有找到名称包含「${n}」的花样</p></div>`;return;}
     grid.innerHTML=`<div class="grid">`+filtered.sort((a,b)=>b.created-a.created).map(p=>patternCard(p)).join('')+`</div>`;
     $$('.pattern-card').forEach(c=>c.addEventListener('click',()=>showPatternDetail(c.dataset.id)));
+    hydratePatternImages();
     return;
   }
 }
