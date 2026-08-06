@@ -1086,6 +1086,249 @@ async function migrateProjectImagesToStorage() {
   };
 }
 
+async function migrateWorkImagesToStorage() {
+  let migratedWorks = 0;
+  let migratedImages = 0;
+  let failed = 0;
+
+  for (
+    let workIndex = 0;
+    workIndex < works.length;
+    workIndex += 1
+  ) {
+    const work = works[workIndex];
+
+    let changed = false;
+    const updatedWork = {
+      ...work
+    };
+
+    /*
+     * 迁移作品主图
+     */
+    if (
+      typeof work.img === "string" &&
+      work.img.startsWith("data:image/") &&
+      !work.imgPath
+    ) {
+      try {
+        setSyncStatus(
+          "syncing",
+          `迁移作品主图 ${workIndex + 1}/${works.length}`
+        );
+
+        const blob =
+          await optimizePatternImage(
+            work.img
+          );
+
+        const path =
+          `works/${work.id}/cover.webp`;
+
+        await uploadCloudImage(
+          path,
+          blob
+        );
+
+        updatedWork.imgPath = path;
+        updatedWork.imageType =
+          blob.type;
+        updatedWork.imageSize =
+          blob.size;
+
+        changed = true;
+        migratedImages += 1;
+
+      } catch (error) {
+        failed += 1;
+
+        console.error(
+          `作品主图迁移失败：${work.name}`,
+          error
+        );
+      }
+    }
+
+    /*
+     * 迁移成品实拍 photos
+     */
+    const originalPhotos =
+      Array.isArray(work.photos)
+        ? work.photos
+        : [];
+
+    const photoPaths =
+      Array.isArray(work.photoPaths)
+        ? [...work.photoPaths]
+        : [];
+
+    for (
+      let photoIndex = 0;
+      photoIndex < originalPhotos.length;
+      photoIndex += 1
+    ) {
+      if (photoPaths[photoIndex]) {
+        continue;
+      }
+
+      const photo =
+        originalPhotos[photoIndex];
+
+      if (
+        typeof photo !== "string" ||
+        !photo.startsWith("data:image/")
+      ) {
+        continue;
+      }
+
+      try {
+        setSyncStatus(
+          "syncing",
+          `迁移作品照片 ${workIndex + 1}/${works.length} · ${photoIndex + 1}/${originalPhotos.length}`
+        );
+
+        const blob =
+          await optimizePatternImage(
+            photo
+          );
+
+        const path =
+          `works/${work.id}/photo-${photoIndex + 1}.webp`;
+
+        await uploadCloudImage(
+          path,
+          blob
+        );
+
+        photoPaths[photoIndex] =
+          path;
+
+        changed = true;
+        migratedImages += 1;
+
+      } catch (error) {
+        failed += 1;
+
+        console.error(
+          `作品照片迁移失败：${work.name} 第 ${photoIndex + 1} 张`,
+          error
+        );
+      }
+    }
+
+    if (photoPaths.length > 0) {
+      updatedWork.photoPaths =
+        photoPaths.filter(Boolean);
+    }
+
+    if (changed) {
+      await dbPut(
+        "works",
+        updatedWork
+      );
+
+      works = works.map(item =>
+        item.id === updatedWork.id
+          ? updatedWork
+          : item
+      );
+
+      migratedWorks += 1;
+    }
+  }
+
+  return {
+    migrated: migratedWorks,
+    migratedImages,
+    failed
+  };
+}
+
+async function migrateMaterialImagesToStorage() {
+  let migrated = 0;
+  let failed = 0;
+
+  for (
+    let index = 0;
+    index < materials.length;
+    index += 1
+  ) {
+    const material =
+      materials[index];
+
+    if (
+      typeof material.img !== "string" ||
+      !material.img.startsWith(
+        "data:image/"
+      ) ||
+      material.imgPath
+    ) {
+      continue;
+    }
+
+    try {
+      setSyncStatus(
+        "syncing",
+        `迁移线材图片 ${index + 1}/${materials.length}`
+      );
+
+      const blob =
+        await optimizePatternImage(
+          material.img
+        );
+
+      const path =
+        `materials/${material.id}/image.webp`;
+
+      await uploadCloudImage(
+        path,
+        blob
+      );
+
+      const updatedMaterial = {
+        ...material,
+
+        imgPath:
+          path,
+
+        imageType:
+          blob.type,
+
+        imageSize:
+          blob.size
+      };
+
+      await dbPut(
+        "materials",
+        updatedMaterial
+      );
+
+      materials =
+        materials.map(item =>
+          item.id ===
+          updatedMaterial.id
+            ? updatedMaterial
+            : item
+        );
+
+      migrated += 1;
+
+    } catch (error) {
+      failed += 1;
+
+      console.error(
+        `线材图片迁移失败：${material.name}`,
+        error
+      );
+    }
+  }
+
+  return {
+    migrated,
+    failed
+  };
+}
+
 async function fetchCloudRecords() {
   const result = await syncApi(
     "/records",
@@ -1154,6 +1397,31 @@ if (
     blueprint:
       blueprintWithoutBase64
   };
+}
+
+if (
+  storeName === "works"
+) {
+  const {
+    img,
+    photos,
+    ...workWithoutBase64
+  } = item;
+
+  cloudPayload =
+    workWithoutBase64;
+}
+
+if (
+  storeName === "materials"
+) {
+  const {
+    img,
+    ...materialWithoutBase64
+  } = item;
+
+  cloudPayload =
+    materialWithoutBase64;
 }
 
   return {
@@ -1249,6 +1517,28 @@ if (
 ) {
   toast(
     `有 ${projectMigrationResult.failed} 张项目图纸迁移失败`
+  );
+}
+
+const workMigrationResult =
+  await migrateWorkImagesToStorage();
+
+if (
+  workMigrationResult.failed > 0
+) {
+  toast(
+    `有 ${workMigrationResult.failed} 张作品图片迁移失败`
+  );
+}
+
+const materialMigrationResult =
+  await migrateMaterialImagesToStorage();
+
+if (
+  materialMigrationResult.failed > 0
+) {
+  toast(
+    `有 ${materialMigrationResult.failed} 张线材图片迁移失败`
   );
 }
 
@@ -1821,12 +2111,13 @@ function addToday(n){const k=todayKey();localStorage.setItem(k,String(getToday()
 let projects=[],counters=[],patterns=[],works=[],materials=[],designs=[];
 let currentProjectId=null,currentCounterId=null,currentPatternId=null,currentWorkId=null,currentMaterialId=null;
 let currentBlueprintBlob = null;
+let currentMaterialPath = null;
 let currentBlueprintPath = null;
 
 let currentPatternBlob = null;
 let currentWorkBlob = null;
 let currentWorkPhotos = [];
-let currentMaterialBlob = null;
+currentMaterialPath = null;
 let currentPatternPhotos=[];
 
 /* ========== Nav ========== */
@@ -2839,6 +3130,41 @@ function calcEstimate(){
 }
 
 /* ========== Works ========== */
+async function hydrateWorkImages() {
+  const images =
+    document.querySelectorAll(
+      ".work-cloud-image"
+    );
+
+  for (const image of images) {
+    if (
+      image.getAttribute("src")
+    ) {
+      continue;
+    }
+
+    const path =
+      image.dataset.cloudPath;
+
+    if (!path) {
+      continue;
+    }
+
+    try {
+      image.src =
+        await getCloudImageUrl(
+          path
+        );
+
+    } catch (error) {
+      console.error(
+        "作品图片加载失败：",
+        image.dataset.workId,
+        error
+      );
+    }
+  }
+}
 function renderWorks(){
   $('#topbar-actions').innerHTML=`<button class="btn" id="btn-export-works">导出长图</button><button class="btn primary" id="btn-new-work">＋ 新增作品</button>`;
   $('#btn-new-work').addEventListener('click',openWorkModal);
@@ -2848,8 +3174,20 @@ function renderWorks(){
   list.innerHTML=`<div class="grid">`+works.sort((a,b)=>(b.date||b.created)-(a.date||a.created)).map(w=>{
     const img=w.img||(w.photos&&w.photos.length?w.photos[0]:null);
     return `<div class="card work-card" style="cursor:pointer;overflow:hidden;" data-id="${w.id}">
-      ${img?`<img src="${img}" style="width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--bg);">`:''}
-      <div style="padding:14px;">
+${
+  localImage || cloudPath
+    ? `
+      <img
+        class="work-cloud-image"
+        src="${localImage || ""}"
+        data-cloud-path="${cloudPath || ""}"
+        data-work-id="${w.id}"
+        style="width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--bg);"
+      >
+    `
+    : ""
+}
+        <div style="padding:14px;">
         <div style="font-weight:600;font-size:15px;margin-bottom:4px;">${w.name||'未命名'}</div>
         <div style="font-size:12px;color:var(--ink-mute);display:flex;gap:8px;flex-wrap:wrap;">
           ${w.yarn?`<span>🧶 ${w.yarn}</span>`:''}
@@ -2860,6 +3198,7 @@ function renderWorks(){
     </div>`;
   }).join('')+`</div>`;
   $$('.work-card').forEach(c=>c.addEventListener('click',()=>showWorkDetail(c.dataset.id)));
+hydrateWorkImages();
 }
 function openWorkModal(){
   currentWorkId=null;currentWorkBlob=null;currentWorkPhotos=[];
@@ -2897,7 +3236,65 @@ function showWorkDetail(id){
     ${w.photos&&w.photos.length?`<div class="field"><label>成品实拍</label><div class="thumb-grid">${w.photos.map(src=>`<img class="img-thumb" src="${src}" style="width:80px;height:80px;">`).join('')}</div></div>`:''}`;
   openM('modal-work-detail');
 }
-$('#btn-del-work').addEventListener('click',async ()=>{if(!currentWorkId||!confirm('确定删除这个作品记录吗？'))return;await dbDel('works',currentWorkId);works=works.filter(x=>x.id!==currentWorkId);closeM('modal-work-detail');renderWorks();toast('已删除');});
+$("#btn-del-work").addEventListener(
+  "click",
+  async () => {
+    if (
+      !currentWorkId ||
+      !confirm(
+        "确定删除这个作品记录吗？云端图片也会在下次同步时清理。"
+      )
+    ) {
+      return;
+    }
+
+    const work =
+      works.find(
+        item =>
+          item.id === currentWorkId
+      );
+
+    if (!work) return;
+
+    const paths = [
+      work.imgPath,
+      ...(
+        Array.isArray(
+          work.photoPaths
+        )
+          ? work.photoPaths
+          : []
+      )
+    ].filter(Boolean);
+
+    queueCloudDeletion(
+      "works",
+      work.id,
+      paths
+    );
+
+    await dbDel(
+      "works",
+      work.id
+    );
+
+    works =
+      works.filter(
+        item =>
+          item.id !== work.id
+      );
+
+    closeM(
+      "modal-work-detail"
+    );
+
+    renderWorks();
+
+    toast(
+      "已删除，点击立即同步完成云端清理"
+    );
+  }
+);
 
 /* ========== Export ========== */
 async function exportWorks(){
@@ -2913,7 +3310,23 @@ async function exportWorks(){
   let y=120;
   for(const w of sorted){
     ctx.fillStyle='#fff';ctx.strokeStyle='#D3E2EE';ctx.beginPath();ctx.roundRect(24,y,W-48,320,12);ctx.fill();ctx.stroke();
-    const img=w.img||(w.photos&&w.photos.length?w.photos[0]:null);
+   const localImage =
+  w.img ||
+  (
+    w.photos &&
+    w.photos.length
+      ? w.photos[0]
+      : ""
+  );
+
+const cloudPath =
+  w.imgPath ||
+  (
+    w.photoPaths &&
+    w.photoPaths.length
+      ? w.photoPaths[0]
+      : ""
+  );
     if(img){const im=await loadImg(img);if(im){const iw=W-72,ih=180;ctx.save();ctx.beginPath();ctx.roundRect(36,y+16,iw,ih,8);ctx.clip();const r=Math.max(iw/im.width,ih/im.height);ctx.drawImage(im,36+(iw-im.width*r)/2,y+16+(ih-im.height*r)/2,im.width*r,im.height*r);ctx.restore();}}
     else{ctx.fillStyle='#EAF1F7';ctx.beginPath();ctx.roundRect(36,y+16,W-72,180,8);ctx.fill();ctx.fillStyle='#8AA3B8';ctx.font='12px sans-serif';ctx.textAlign='center';ctx.fillText('无照片',W/2,y+108);}
     ctx.textAlign='left';ctx.fillStyle='#1F3347';ctx.font='bold 15px sans-serif';ctx.fillText(w.name||'未命名',36,y+220);
@@ -2927,6 +3340,41 @@ async function exportWorks(){
 }
 
 /* ========== Materials ========== */
+async function hydrateMaterialImages() {
+  const images =
+    document.querySelectorAll(
+      ".material-cloud-image"
+    );
+
+  for (const image of images) {
+    if (
+      image.getAttribute("src")
+    ) {
+      continue;
+    }
+
+    const path =
+      image.dataset.cloudPath;
+
+    if (!path) {
+      continue;
+    }
+
+    try {
+      image.src =
+        await getCloudImageUrl(
+          path
+        );
+
+    } catch (error) {
+      console.error(
+        "线材图片加载失败：",
+        image.dataset.materialId,
+        error
+      );
+    }
+  }
+}
 function renderMaterials(){
   $('#topbar-actions').innerHTML=`<button class="btn primary" id="btn-new-material-top">＋ 添加线材</button>`;
   $('#btn-new-material-top').addEventListener('click',()=>openMaterialModal());
@@ -2937,8 +3385,20 @@ function renderMaterials(){
   if(listData.length===0){list.innerHTML=`<div class="empty"><svg viewBox="0 0 120 120" fill="none"><circle cx="60" cy="35" r="20" stroke="var(--line)" stroke-width="3"/><path d="M40 55 Q60 90 80 55" stroke="var(--line)" stroke-width="3" fill="none"/></svg><p>${materials.length===0?'还没有线材，点击右上角添加吧':'没有匹配的线材'}</p></div>`;return;}
   list.innerHTML=`<div class="grid">`+listData.sort((a,b)=>b.created-a.created).map(m=>`<div class="card" style="padding:14px;cursor:pointer;" data-id="${m.id}">
     <div style="display:flex;gap:12px;">
-      ${m.img?`<img class="img-thumb" src="${m.img}" style="width:60px;height:60px;">`:''}
-      <div style="flex:1;min-width:0;">
+${
+  m.img || m.imgPath
+    ? `
+      <img
+        class="img-thumb material-cloud-image"
+        src="${m.img || ""}"
+        data-cloud-path="${m.imgPath || ""}"
+        data-material-id="${m.id}"
+        style="width:60px;height:60px;"
+      >
+    `
+    : ""
+}
+        <div style="flex:1;min-width:0;">
         <div style="font-weight:600;font-size:15px;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.name||'未命名'}</div>
         <div style="font-size:12px;color:var(--ink-mute);margin-bottom:6px;">
           ${m.brand?`<span class="tag-pill outline">${m.brand}</span>`:''}
@@ -2953,6 +3413,7 @@ function renderMaterials(){
     </div>
   </div>`).join('')+`</div>`;
   $$('#material-list .card').forEach(c=>c.addEventListener('click',()=>openMaterialModal(c.dataset.id)));
+hydrateMaterialImages();
 }
 $('#material-search').addEventListener('input',renderMaterials);
 function openMaterialModal(id){
@@ -2964,8 +3425,42 @@ function openMaterialModal(id){
   $('#m-ply').value=m?(m.ply||''):'';
   $$('#m-unit button').forEach(b=>b.classList.toggle('active',b.dataset.unit===(m?m.unit:'g')));
   $$('#m-partner button').forEach(b=>b.classList.toggle('active',b.dataset.partner===(m?(m.partner||'no'):'no')));
-  const img=$('#material-preview');
-  if(m&&m.img){img.src=m.img;img.style.display='block';currentMaterialBlob=m.img;}else{img.style.display='none';}
+  const img =
+  $("#material-preview");
+
+img.style.display = "none";
+img.removeAttribute("src");
+
+currentMaterialBlob = null;
+currentMaterialPath =
+  m?.imgPath || null;
+
+if (m?.img) {
+  currentMaterialBlob =
+    m.img;
+
+  img.src =
+    m.img;
+
+  img.style.display =
+    "block";
+
+} else if (currentMaterialPath) {
+  getCloudImageUrl(
+    currentMaterialPath
+  )
+    .then(url => {
+      img.src = url;
+      img.style.display =
+        "block";
+    })
+    .catch(error => {
+      console.error(
+        "线材图片读取失败：",
+        error
+      );
+    });
+}
   $('#btn-del-material').style.display=id?'inline-flex':'none';
   openM('modal-material');
 }
@@ -2973,19 +3468,71 @@ $('#m-unit').addEventListener('click',e=>{if(e.target.tagName!=='BUTTON')return;
 $('#m-partner').addEventListener('click',e=>{if(e.target.tagName!=='BUTTON')return;$$('#m-partner button').forEach(b=>b.classList.remove('active'));e.target.classList.add('active');});
 const dzMat=$('#dropzone-material');
 dzMat.addEventListener('click',()=>$('#material-file').click());
-$('#material-file').addEventListener('change',async e=>{const f=e.target.files[0];if(f){const d=await readFile(f);currentMaterialBlob=d;const img=$('#material-preview');img.src=d;img.style.display='block';}});
+$('#material-file').addEventListener('change',async e=>{const f=e.target.files[0];if(f){const d=await readFile(f);currentMaterialBlob=d;currentMaterialPath = null;const img=$('#material-preview');img.src=d;img.style.display='block';}});
 dzMat.addEventListener('dragover',e=>{e.preventDefault();dzMat.classList.add('over');});dzMat.addEventListener('dragleave',()=>dzMat.classList.remove('over'));
-dzMat.addEventListener('drop',async e=>{e.preventDefault();dzMat.classList.remove('over');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/')){const d=await readFile(f);currentMaterialBlob=d;const img=$('#material-preview');img.src=d;img.style.display='block';}});
+dzMat.addEventListener('drop',async e=>{e.preventDefault();dzMat.classList.remove('over');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/')){const d=await readFile(f);currentMaterialBlob=d;currentMaterialPath = null;const img=$('#material-preview');img.src=d;img.style.display='block';}});
 $('#btn-save-material').addEventListener('click',async ()=>{
   const name=$('#m-name').value.trim();if(!name){toast('请填写线材名称');return;}
   const unit=$('#m-unit button.active').dataset.unit;
   const partner=$('#m-partner button.active').dataset.partner;
-  const m={id:currentMaterialId||uid(),name,brand:$('#m-brand').value.trim(),color:$('#m-color').value.trim(),material:$('#m-material').value.trim(),unit,weight:$('#m-weight').value?parseFloat($('#m-weight').value):null,ply:$('#m-ply').value?parseInt($('#m-ply').value,10):null,partner,needle:$('#m-needle').value.trim(),price:$('#m-price').value?parseFloat($('#m-price').value):null,note:$('#m-note').value.trim(),img:currentMaterialBlob,created:currentMaterialId?(materials.find(x=>x.id===currentMaterialId).created):Date.now()};
+  const m={id:currentMaterialId||uid(),name,brand:$('#m-brand').value.trim(),color:$('#m-color').value.trim(),material:$('#m-material').value.trim(),unit,weight:$('#m-weight').value?parseFloat($('#m-weight').value):null,ply:$('#m-ply').value?parseInt($('#m-ply').value,10):null,partner,needle:$('#m-needle').value.trim(),price:$('#m-price').value?parseFloat($('#m-price').value):null,note:$('#m-note').value.trim(),img:
+  currentMaterialBlob,imgPath:currentMaterialPath,created:currentMaterialId?(materials.find(x=>x.id===currentMaterialId).created):Date.now()};
   if(currentMaterialId){await dbPut('materials',m);materials=materials.map(x=>x.id===m.id?m:x);}
   else{await dbAdd('materials',m);materials.push(m);}
   closeM('modal-material');renderMaterials();toast('线材已保存 ✓');
 });
-$('#btn-del-material').addEventListener('click',async ()=>{if(!currentMaterialId||!confirm('确定删除这条线材吗？'))return;await dbDel('materials',currentMaterialId);materials=materials.filter(x=>x.id!==currentMaterialId);closeM('modal-material');renderMaterials();toast('已删除');});
+$("#btn-del-material").addEventListener(
+  "click",
+  async () => {
+    if (
+      !currentMaterialId ||
+      !confirm(
+        "确定删除这条线材吗？云端图片也会在下次同步时清理。"
+      )
+    ) {
+      return;
+    }
+
+    const material =
+      materials.find(
+        item =>
+          item.id ===
+          currentMaterialId
+      );
+
+    if (!material) return;
+
+    queueCloudDeletion(
+      "materials",
+      material.id,
+      [
+        material.imgPath
+      ].filter(Boolean)
+    );
+
+    await dbDel(
+      "materials",
+      material.id
+    );
+
+    materials =
+      materials.filter(
+        item =>
+          item.id !==
+          material.id
+      );
+
+    closeM(
+      "modal-material"
+    );
+
+    renderMaterials();
+
+    toast(
+      "已删除，点击立即同步完成云端清理"
+    );
+  }
+);
 
 /* ========== Material Picker (for project modal) ========== */
 function openMaterialPicker(){
