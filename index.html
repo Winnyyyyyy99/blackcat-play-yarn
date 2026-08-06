@@ -1882,6 +1882,43 @@ $('#btn-save-counter').addEventListener('click',async ()=>{
 });
 
 /* ========== Patterns ========== */
+const cloudImageUrlCache = new Map();
+
+async function getCloudImageUrl(path) {
+  if (!path) {
+    return "";
+  }
+
+  if (cloudImageUrlCache.has(path)) {
+    return cloudImageUrlCache.get(path);
+  }
+
+  const token = ensureSyncToken();
+
+  const response = await fetch(
+    `${SYNC_API_URL}/files?path=${encodeURIComponent(path)}`,
+    {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+
+    throw new Error(
+      `图片读取失败：${response.status} ${errorText}`
+    );
+  }
+
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+
+  cloudImageUrlCache.set(path, objectUrl);
+
+  return objectUrl;
+}
 async function hydratePatternImages() {
   const images =
     document.querySelectorAll(
