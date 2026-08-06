@@ -2067,6 +2067,194 @@ async function getCloudImageUrl(path) {
 
   return objectUrl;
 }
+  async function deleteCloudImages(paths) {
+  const cleanPaths = [
+    ...new Set(
+      paths.filter(path =>
+        typeof path === "string" &&
+        path.trim()
+      )
+    )
+  ];
+
+  if (cleanPaths.length === 0) {
+    return {
+      ok: true,
+      deleted: []
+    };
+  }
+
+  const token =
+    ensureSyncToken();
+
+  const response = await fetch(
+    `${SYNC_API_URL}/files`,
+    {
+      method: "DELETE",
+
+      headers: {
+        "Authorization":
+          `Bearer ${token}`,
+
+        "Content-Type":
+          "application/json"
+      },
+
+      body: JSON.stringify({
+        paths: cleanPaths
+      })
+    }
+  );
+
+  const result =
+    await response
+      .json()
+      .catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(
+      result?.error ||
+      `图片清理失败：${response.status}`
+    );
+  }
+
+  /*
+   * 清除已经失效的 Blob URL 缓存。
+   */
+  for (const path of cleanPaths) {
+    const cachedUrl =
+      cloudImageUrlCache.get(path);
+
+    if (cachedUrl) {
+      URL.revokeObjectURL(cachedUrl);
+      cloudImageUrlCache.delete(path);
+    }
+  }
+
+  return result;
+}
+  const PENDING_CLOUD_DELETIONS_KEY =
+  "cat-yarn-pending-cloud-deletions";
+
+function getPendingCloudDeletions() {
+  try {
+    const value =
+      JSON.parse(
+        localStorage.getItem(
+          PENDING_CLOUD_DELETIONS_KEY
+        ) || "[]"
+      );
+
+    return Array.isArray(value)
+      ? value
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function savePendingCloudDeletions(items) {
+  localStorage.setItem(
+    PENDING_CLOUD_DELETIONS_KEY,
+    JSON.stringify(items)
+  );
+}
+
+function queueCloudDeletion(
+  storeName,
+  recordId,
+  paths
+) {
+  const queue =
+    getPendingCloudDeletions();
+
+  const cleanPaths = [
+    ...new Set(
+      paths.filter(Boolean)
+    )
+  ];
+
+  queue.push({
+    id: uid(),
+    storeName,
+    recordId: String(recordId),
+    paths: cleanPaths,
+    createdAt: Date.now()
+  });
+
+  savePendingCloudDeletions(queue);
+}
+  async function processPendingCloudDeletions() {
+  const queue =
+    getPendingCloudDeletions();
+
+  if (queue.length === 0) {
+    return {
+      completed: 0,
+      failed: 0
+    };
+  }
+
+  const remaining = [];
+  let completed = 0;
+  let failed = 0;
+
+  for (const item of queue) {
+    try {
+      /*
+       * 先写入 deleted=true，防止其他设备恢复旧记录。
+       */
+      await sendCloudRecords([
+        {
+          record_key:
+            `${item.storeName}:${item.recordId}`,
+
+          store_name:
+            item.storeName,
+
+          record_id:
+            item.recordId,
+
+          payload: {},
+
+          updated_at:
+            new Date().toISOString(),
+
+          deleted:
+            true
+        }
+      ]);
+
+      /*
+       * 数据库删除标记成功后，再清理 Storage。
+       */
+      await deleteCloudImages(
+        item.paths
+      );
+
+      completed += 1;
+
+    } catch (error) {
+      console.error(
+        "云端垃圾回收失败：",
+        item,
+        error
+      );
+
+      remaining.push(item);
+      failed += 1;
+    }
+  }
+
+  savePendingCloudDeletions(
+    remaining
+  );
+
+  return {
+    completed,
+    failed
+  };
+}
 async function hydratePatternImages() {
   const images =
     document.querySelectorAll(
