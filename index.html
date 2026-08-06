@@ -1109,7 +1109,16 @@ async function uploadAllLocalDataToCloud() {
 
   try {
   setSyncStatus("syncing", "同步中");
+    
+const deletionResult =
+  await processPendingCloudDeletions();
 
+if (deletionResult.failed > 0) {
+  console.warn(
+    `${deletionResult.failed} 项云端垃圾暂未清理`
+  );
+}
+    
     const migrationResult =
   await migratePatternImagesToStorage();
 
