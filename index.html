@@ -3567,7 +3567,11 @@ $("#btn-del-work").addEventListener("click",()=>{
       const work=works.find(x=>x.id===currentWorkId);
       if(!work)return;
       const paths=[work.imgPath,...(Array.isArray(work.photoPaths)?work.photoPaths:[])].filter(Boolean);
-      if(paths.length)queueCloudDeletion('works',work.id,paths);
+      queueCloudDeletion(
+  'works',
+  work.id,
+  paths
+);
       await dbDel('works',work.id);
       works=works.filter(x=>x.id!==work.id);
       closeM('modal-work-detail');
